@@ -1,5 +1,7 @@
 # RightOS SDKs
 
+[![ci](https://github.com/suomimasuda/rightos-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/suomimasuda/rightos-sdk/actions/workflows/ci.yml)
+
 Official SDKs for [RightOS](https://rightos.i-s3.com/software/rightos) — privacy-preserving rights verification infrastructure by [I-S3](https://www.i-s3.com/) (Japan).
 
 RightOS turns queues, reservations, EV charging, and package pickup into digital QR tickets ("Right Tokens"). It verifies that **a valid right is present — never who the person is**. No names, phone numbers, or birthdates are required from end users.

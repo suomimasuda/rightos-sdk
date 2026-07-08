@@ -1,0 +1,100 @@
+# RightOS SDK CI — build checks on push/PR, live tests against production daily.
+#
+# Live tests are read-heavy by design: each run issues exactly one demo token
+# per SDK on the shared demo organization (rk_demo key is public), verifies it,
+# and marks it used. See typescript/test-live.mjs and python/test_live.py.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Daily at 21:00 UTC = 06:00 JST
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build TypeScript SDK
+        working-directory: typescript
+        run: |
+          npm install
+          npm run build
+
+      - name: Build MCP server (resolves published @i-s3/rightos from npm)
+        working-directory: mcp
+        run: |
+          npm ci
+          npm run build
+
+      - name: Check Python SDK syntax
+        working-directory: python
+        run: |
+          python -m compileall rightos
+          python -c "from rightos import RightOS, RightOSError; print('import OK')"
+
+      - name: Upload build artifacts for live tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: |
+            typescript/dist
+            mcp/dist
+          retention-days: 1
+
+  live-tests:
+    # Only run against production on main / schedule / manual — not on PRs.
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+
+      - name: Production health check
+        run: |
+          set -eu
+          base="https://rightos.i-s3.com"
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$base/software/rightos")
+          test "$code" = "200" || { echo "LP returned $code"; exit 1; }
+          plans=$(curl -s "$base/api/rightos/plans" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")
+          test "$plans" = "5" || { echo "plans returned $plans entries"; exit 1; }
+          curl -s "$base/api/rightos/billing/config" | grep -q '"enabled":true' || { echo "billing not enabled"; exit 1; }
+          echo "production health OK"
+
+      - name: TypeScript SDK live test
+        working-directory: typescript
+        run: node test-live.mjs
+
+      - name: Python SDK live test
+        working-directory: python
+        run: python test_live.py
+
+      - name: MCP stdio live test
+        working-directory: mcp
+        run: |
+          npm ci --omit=dev
+          node test-stdio.mjs

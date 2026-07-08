@@ -47,6 +47,10 @@ policy = client.get_location_policy(location["id"])["policy"]
 
 client.set_location_policy(location["id"], {"transferable": False})  # override
 client.set_location_policy(location["id"], None)  # reset to industry preset
+
+# The full knowledge base — industry presets and country overlays
+# (JP/US/GB/KR/TW/FR/DE/IT/ES/AU, informed by local ticket-resale laws):
+defs = client.list_policies()  # defaults, not legal advice
 ```
 
 ## Error handling

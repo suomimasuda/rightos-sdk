@@ -139,6 +139,22 @@ export interface LocationPolicyResponse {
   hasOverride: boolean;
 }
 
+/**
+ * The public policy knowledge base: industry presets per location type and
+ * country overlays (organization country x location type). Overlays are
+ * conservative operational defaults informed by local laws — not legal advice.
+ */
+export interface PolicyDefinitions {
+  /** Resolution order for a location's effective policy. */
+  resolutionOrder: string[];
+  presets: Record<LocationType, RightPolicy>;
+  countryOverlays: Record<
+    string,
+    Partial<Record<LocationType, Partial<RightPolicy>>>
+  >;
+  note: string;
+}
+
 /** Error thrown for any non-2xx API response. */
 export class RightOSError extends Error {
   /** HTTP status code */
@@ -291,6 +307,15 @@ export class RightOS {
       "GET",
       `/api/rightos/locations/${encodeURIComponent(locationId)}/policy`
     );
+  }
+
+  /**
+   * List all industry presets and country overlays (public).
+   * Useful for choosing a location type or proposing policy overrides.
+   * Defaults, not legal advice.
+   */
+  async listPolicies(): Promise<PolicyDefinitions> {
+    return request(this.opts, "GET", "/api/rightos/policies");
   }
 
   /**

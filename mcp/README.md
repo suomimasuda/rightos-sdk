@@ -38,7 +38,9 @@ Public (no API key):
 | `get_token` | Get a Right Token by ID (never returns the secret code) |
 | `verify_token` | Verify a token with its verification code |
 | `transfer_token` | Transfer a token via re-keying (old code invalidated) |
+| `holder_cancel_token` | Self-cancel a token as its current holder (policy permitting) |
 | `get_location_policy` | Get a location's effective policy (public for transparency) |
+| `list_policies` | List all industry presets and country overlays (JP/US/GB/KR/TW/FR/DE/IT/ES/AU) |
 
 Operator (requires `RIGHTOS_API_KEY`):
 
@@ -47,6 +49,7 @@ Operator (requires `RIGHTOS_API_KEY`):
 | `list_locations` | List your organization's locations |
 | `create_location` | Create a location (type determines the industry policy preset) |
 | `set_location_policy` | Override or reset a location's policy |
+| `get_policy_history` | Policy change audit log (append-only, newest first) |
 | `issue_token` | Issue a digital QR ticket (code + wallet URL returned exactly once) |
 | `use_token` | Mark a ticket as used after service |
 | `cancel_token` | Cancel a ticket |

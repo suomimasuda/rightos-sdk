@@ -52,7 +52,7 @@ notify("notifications/initialized", {});
 
 const tools = await rpc("tools/list", {});
 const names = tools.result.tools.map((t) => t.name).sort();
-check("tools/list returns 14 tools", names.length === 14, `got ${names.length}: ${names.join(",")}`);
+check("tools/list returns 15 tools", names.length === 15, `got ${names.length}: ${names.join(",")}`);
 
 const plans = await rpc("tools/call", { name: "list_plans", arguments: {} });
 const plansData = JSON.parse(plans.result.content[0].text);
@@ -64,6 +64,15 @@ const policy = await rpc("tools/call", {
 });
 const policyData = JSON.parse(policy.result.content[0].text);
 check("loc_ev non-transferable", policyData.policy?.transferable === false);
+
+const defs = await rpc("tools/call", { name: "list_policies", arguments: {} });
+const defsData = JSON.parse(defs.result.content[0].text);
+check(
+  "list_policies returns 7 presets and >= 10 overlays",
+  Object.keys(defsData.presets ?? {}).length === 7 &&
+    Object.keys(defsData.countryOverlays ?? {}).length >= 10,
+  `presets=${Object.keys(defsData.presets ?? {}).length} overlays=${Object.keys(defsData.countryOverlays ?? {}).length}`
+);
 
 const bad = await rpc("tools/call", {
   name: "get_token",

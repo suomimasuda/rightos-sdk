@@ -24,6 +24,13 @@ check("list_plans returns 5 plans", len(plans) == 5, len(plans))
 policy = pub.get_location_policy("loc_ev")
 check("loc_ev policy is non-transferable", policy["policy"]["transferable"] is False)
 
+defs = pub.list_policies()
+check(
+    "list_policies returns 7 presets and >= 10 country overlays",
+    len(defs["presets"]) == 7 and len(defs["countryOverlays"]) >= 10,
+    f"presets={len(defs['presets'])} overlays={len(defs['countryOverlays'])}",
+)
+
 try:
     RightOS(api_key="rk_live_invalid").list_locations()
     check("invalid key raises RightOSError(401)", False)

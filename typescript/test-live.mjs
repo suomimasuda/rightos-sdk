@@ -21,6 +21,14 @@ check(
   policy.policy.transferable === false
 );
 
+const defs = await pub.listPolicies();
+check(
+  "listPolicies returns 7 presets and >= 10 country overlays",
+  Object.keys(defs.presets).length === 7 &&
+    Object.keys(defs.countryOverlays).length >= 10,
+  `presets=${Object.keys(defs.presets).length} overlays=${Object.keys(defs.countryOverlays).length}`
+);
+
 // auth error surfaces as RightOSError
 let authErr = null;
 try {

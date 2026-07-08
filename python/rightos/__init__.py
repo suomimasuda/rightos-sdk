@@ -25,7 +25,7 @@ import urllib.request
 from typing import Any, Optional
 
 __all__ = ["RightOS", "RightOSError", "DEFAULT_BASE_URL"]
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 DEFAULT_BASE_URL = "https://rightos.i-s3.com"
 
@@ -140,6 +140,16 @@ class RightOS:
     def get_location_policy(self, location_id: str) -> dict:
         """Get a location's effective policy (public, for transparency)."""
         return self._request("GET", f"/api/rightos/locations/{location_id}/policy")
+
+    def list_policies(self) -> dict:
+        """List all industry presets and country overlays (public).
+
+        Returns the policy knowledge base: ``{"resolutionOrder": [...],
+        "presets": {...}, "countryOverlays": {...}, "note": "..."}``.
+        Useful for choosing a location type or proposing policy overrides.
+        Defaults, not legal advice.
+        """
+        return self._request("GET", "/api/rightos/policies")
 
     def register_organization(
         self, name: str, contact_email: str, plan_id: str = "free", country: str = "JP"

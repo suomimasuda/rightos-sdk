@@ -56,6 +56,10 @@ const { policy } = await client.getLocationPolicy(location.id);
 
 await client.setLocationPolicy(location.id, { transferable: false }); // override
 await client.setLocationPolicy(location.id, null); // reset to industry preset
+
+// The full knowledge base — industry presets and country overlays
+// (JP/US/GB/KR/TW/FR/DE/IT/ES/AU, informed by local ticket-resale laws):
+const defs = await client.listPolicies(); // defaults, not legal advice
 ```
 
 ## Error handling

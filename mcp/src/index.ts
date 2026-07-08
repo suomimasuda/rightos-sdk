@@ -28,7 +28,7 @@ const client = new RightOS({
 
 const server = new McpServer({
   name: "rightos",
-  version: "0.1.0",
+  version: "0.3.0",
 });
 
 type ToolResult = {
@@ -136,6 +136,16 @@ server.registerTool(
     inputSchema: { locationId: z.string().describe("Location ID (loc_...)") },
   },
   ({ locationId }) => run(() => client.getLocationPolicy(locationId))
+);
+
+server.registerTool(
+  "list_policies",
+  {
+    description:
+      "List the full policy knowledge base: industry presets per location type and country overlays (JP, US, GB, KR, TW, FR, DE, IT, ES, AU — informed by local ticket-resale laws). Useful when choosing a location type or proposing policy overrides. Defaults, not legal advice. Public.",
+    inputSchema: {},
+  },
+  () => run(() => client.listPolicies())
 );
 
 // ---------- Operator tools (require RIGHTOS_API_KEY) ----------

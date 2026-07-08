@@ -53,6 +53,32 @@ client.set_location_policy(location["id"], None)  # reset to industry preset
 defs = client.list_policies()  # defaults, not legal advice
 ```
 
+## Webhooks (v0.4.0+)
+
+Receive a signed HTTPS POST whenever a token is verified, used, cancelled, or transferred (up to 3 webhooks per organization):
+
+```python
+from rightos import RightOS, verify_webhook_signature
+
+client = RightOS(api_key="rk_live_...")
+
+# Register — the signing secret is returned EXACTLY ONCE
+created = client.create_webhook(
+    "https://example.com/rightos/hook",
+    events=["token.verified", "token.used"],  # defaults to all four
+)
+secret = created["secret"]  # "whsec_..."
+
+# In your receiver: verify the x-rightos-signature header against the RAW body
+ok = verify_webhook_signature(secret, request.headers["x-rightos-signature"], raw_body)
+# respond 2xx immediately; process asynchronously
+
+client.list_webhooks()  # never includes secrets
+client.delete_webhook(created["webhook"]["id"])
+```
+
+Delivery is best-effort (3s timeout, no retries). Signature format: `t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_body}")>`.
+
 ## Error handling
 
 ```python

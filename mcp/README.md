@@ -54,6 +54,9 @@ Operator (requires `RIGHTOS_API_KEY`):
 | `use_token` | Mark a ticket as used after service |
 | `cancel_token` | Cancel a ticket |
 | `export_data` | Export all organization data as JSON (no lock-in) |
+| `list_webhooks` | List outbound webhooks (never includes signing secrets) |
+| `create_webhook` | Register a webhook — HMAC-SHA256 signed deliveries; secret returned exactly once |
+| `delete_webhook` | Delete a webhook |
 
 ## Example prompts
 

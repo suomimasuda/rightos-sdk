@@ -28,7 +28,7 @@ const client = new RightOS({
 
 const server = new McpServer({
   name: "rightos",
-  version: "0.3.0",
+  version: "0.4.0",
 });
 
 type ToolResult = {
@@ -294,6 +294,50 @@ server.registerTool(
     inputSchema: {},
   },
   () => run(() => client.exportData())
+);
+
+server.registerTool(
+  "list_webhooks",
+  {
+    description:
+      "List the organization's outbound webhooks (never includes signing secrets)." +
+      NEEDS_KEY,
+    inputSchema: {},
+  },
+  () => run(() => client.listWebhooks())
+);
+
+server.registerTool(
+  "create_webhook",
+  {
+    description:
+      "Register an outbound webhook (up to 3 per organization, https only). Events: token.verified / token.used / token.cancelled / token.transferred (defaults to all). The response includes the signing secret (whsec_...) EXACTLY ONCE — deliveries are signed via the x-rightos-signature header (t=<unix seconds>,v1=<hex HMAC-SHA256>)." +
+      NEEDS_KEY,
+    inputSchema: {
+      url: z.string().describe("https URL to receive signed POST deliveries"),
+      events: z
+        .array(
+          z.enum([
+            "token.verified",
+            "token.used",
+            "token.cancelled",
+            "token.transferred",
+          ])
+        )
+        .optional()
+        .describe("Event types to subscribe to (defaults to all four)"),
+    },
+  },
+  ({ url, events }) => run(() => client.createWebhook({ url, events }))
+);
+
+server.registerTool(
+  "delete_webhook",
+  {
+    description: "Delete an outbound webhook (own organization only)." + NEEDS_KEY,
+    inputSchema: { webhookId: z.string().describe("Webhook ID (wh_...)") },
+  },
+  ({ webhookId }) => run(() => client.deleteWebhook(webhookId))
 );
 
 const transport = new StdioServerTransport();

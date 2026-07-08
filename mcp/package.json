@@ -1,6 +1,6 @@
 {
   "name": "@i-s3/rightos-mcp",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "MCP server for RightOS — lets AI agents issue, verify, and transfer digital QR tickets (Right Tokens) for queues, reservations, EV charging, and package pickup.",
   "keywords": ["mcp", "model-context-protocol", "rightos", "qr", "digital-ticket", "i-s3", "ai-agent"],
   "license": "MIT",
@@ -25,7 +25,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@i-s3/rightos": "^0.3.0",
+    "@i-s3/rightos": "^0.4.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.25.0"
   },

@@ -24,8 +24,13 @@ import urllib.error
 import urllib.request
 from typing import Any, Optional
 
-__all__ = ["RightOS", "RightOSError", "DEFAULT_BASE_URL"]
-__version__ = "0.3.0"
+__all__ = [
+    "RightOS",
+    "RightOSError",
+    "DEFAULT_BASE_URL",
+    "verify_webhook_signature",
+]
+__version__ = "0.4.0"
 
 DEFAULT_BASE_URL = "https://rightos.i-s3.com"
 
@@ -234,6 +239,27 @@ class RightOS:
         """Cancel a token (own organization only)."""
         return self._request("POST", f"/api/rightos/tokens/{token_id}/cancel")["token"]
 
+    def list_webhooks(self) -> list:
+        """List your organization's webhooks (never includes signing secrets)."""
+        return self._request("GET", "/api/rightos/webhooks")["webhooks"]
+
+    def create_webhook(self, url: str, events: Optional[list] = None) -> dict:
+        """Register a webhook (up to 3 per organization; https only).
+
+        Returns ``{"webhook": {...}, "secret": "whsec_...", ...}``.
+        The ``secret`` is shown EXACTLY ONCE — store it securely and use it
+        with :func:`verify_webhook_signature`. ``events`` defaults to all four
+        (token.verified / token.used / token.cancelled / token.transferred).
+        """
+        body: dict = {"url": url}
+        if events is not None:
+            body["events"] = events
+        return self._request("POST", "/api/rightos/webhooks", body)
+
+    def delete_webhook(self, webhook_id: str) -> dict:
+        """Delete a webhook (own organization only)."""
+        return self._request("DELETE", f"/api/rightos/webhooks/{webhook_id}")
+
     def export_data(self) -> dict:
         """Export all organization data as JSON (no lock-in; contains no secrets)."""
         return self._request("GET", "/api/rightos/export")
@@ -256,3 +282,36 @@ class RightOS:
         return self._request(
             "POST", "/api/rightos/organizations/delete", {"confirm": confirm_name}
         )
+
+
+def verify_webhook_signature(
+    secret: str,
+    signature_header: str,
+    raw_body: bytes | str,
+    tolerance_sec: int = 300,
+) -> bool:
+    """Verify a webhook delivery's signature.
+
+    Header ``x-rightos-signature`` has the format
+    ``t=<unix seconds>,v1=<hex HMAC-SHA256(secret, f"{t}.{raw_body}")>``.
+    Pass the RAW request body (bytes or str, before JSON parsing).
+
+    ``tolerance_sec`` rejects deliveries older than that many seconds
+    (replay protection). Pass 0 to skip the timestamp check.
+    """
+    import hashlib
+    import hmac as _hmac
+    import re
+    import time
+
+    match = re.search(r"(?:^|,)t=(\d+),v1=([0-9a-f]+)", signature_header.strip())
+    if not match:
+        return False
+    t, v1 = match.group(1), match.group(2)
+    if tolerance_sec > 0 and abs(time.time() - int(t)) > tolerance_sec:
+        return False
+    body = raw_body.decode("utf-8") if isinstance(raw_body, bytes) else raw_body
+    expected = _hmac.new(
+        secret.encode("utf-8"), f"{t}.{body}".encode("utf-8"), hashlib.sha256
+    ).hexdigest()
+    return _hmac.compare_digest(expected, v1)

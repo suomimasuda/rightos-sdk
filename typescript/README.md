@@ -62,6 +62,32 @@ await client.setLocationPolicy(location.id, null); // reset to industry preset
 const defs = await client.listPolicies(); // defaults, not legal advice
 ```
 
+## Webhooks (v0.4.0+)
+
+Receive a signed HTTPS POST whenever a token is verified, used, cancelled, or transferred (up to 3 webhooks per organization):
+
+```ts
+// Register — the signing secret is returned EXACTLY ONCE
+const { webhook, secret } = await client.createWebhook({
+  url: "https://example.com/rightos/hook",
+  events: ["token.verified", "token.used"], // defaults to all four
+});
+
+// In your receiver: verify the x-rightos-signature header against the RAW body
+const ok = await RightOS.verifyWebhookSignature(
+  secret,
+  req.headers["x-rightos-signature"],
+  rawBody // string, before JSON.parse
+);
+if (!ok) return res.status(400).end();
+res.status(200).end(); // respond 2xx immediately; process asynchronously
+
+await client.listWebhooks(); // never includes secrets
+await client.deleteWebhook(webhook.id);
+```
+
+Delivery is best-effort (3s timeout, no retries). Signature format: `t=<unix seconds>,v1=<hex HMAC-SHA256(secret, "${t}.${rawBody}")>`.
+
 ## Error handling
 
 All non-2xx responses throw `RightOSError` with `status`, `code`, and `retryAfterSec` (on 429):

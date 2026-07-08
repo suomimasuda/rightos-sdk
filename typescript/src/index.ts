@@ -155,6 +155,41 @@ export interface PolicyDefinitions {
   note: string;
 }
 
+/** Outbound webhook event types. */
+export type WebhookEventType =
+  | "token.verified"
+  | "token.used"
+  | "token.cancelled"
+  | "token.transferred";
+
+/**
+ * Outbound webhook registration. The signing secret (whsec_...) is returned
+ * exactly once at creation and is never stored on RightOS servers.
+ */
+export interface Webhook {
+  id: string;
+  organizationId: string;
+  url: string;
+  events: WebhookEventType[];
+  createdAt: string;
+}
+
+export interface CreatedWebhook {
+  webhook: Webhook;
+  /** Signing secret (whsec_...). Shown only once; not retrievable later. */
+  secret: string;
+  signatureHeader: string;
+  signatureFormat: string;
+}
+
+/** Payload delivered to webhook endpoints. */
+export interface WebhookEvent {
+  id: string;
+  type: WebhookEventType;
+  createdAt: string;
+  data: { token: RightToken };
+}
+
 /** Error thrown for any non-2xx API response. */
 export class RightOSError extends Error {
   /** HTTP status code */
@@ -423,6 +458,38 @@ export class RightOS {
     return data.token;
   }
 
+  /** List your organization's webhooks (never includes signing secrets). */
+  async listWebhooks(): Promise<Webhook[]> {
+    const data = await request<{ webhooks: Webhook[] }>(
+      this.opts,
+      "GET",
+      "/api/rightos/webhooks"
+    );
+    return data.webhooks;
+  }
+
+  /**
+   * Register a webhook (up to 3 per organization; https only).
+   * The returned `secret` (whsec_...) is shown EXACTLY ONCE — store it
+   * securely and use it with `RightOS.verifyWebhookSignature`.
+   * Events default to all four (token.verified/used/cancelled/transferred).
+   */
+  async createWebhook(input: {
+    url: string;
+    events?: WebhookEventType[];
+  }): Promise<CreatedWebhook> {
+    return request(this.opts, "POST", "/api/rightos/webhooks", input);
+  }
+
+  /** Delete a webhook (own organization only). */
+  async deleteWebhook(webhookId: string): Promise<{ ok: boolean }> {
+    return request(
+      this.opts,
+      "DELETE",
+      `/api/rightos/webhooks/${encodeURIComponent(webhookId)}`
+    );
+  }
+
   /** Export all organization data as JSON (no lock-in; contains no secrets). */
   async exportData(): Promise<unknown> {
     return request(this.opts, "GET", "/api/rightos/export");
@@ -473,5 +540,49 @@ export class RightOS {
     baseUrl: string = DEFAULT_BASE_URL
   ): Promise<RightToken> {
     return new RightOS({ baseUrl }).holderCancelToken(tokenId, verificationCode);
+  }
+
+  /**
+   * Verify a webhook delivery's signature (header `x-rightos-signature`,
+   * format `t=<unix seconds>,v1=<hex HMAC-SHA256(secret, "${t}.${rawBody}")>`).
+   *
+   * Pass the RAW request body string (before JSON parsing). Uses Web Crypto,
+   * so it works in Node.js >= 18, browsers, and edge runtimes.
+   *
+   * @param toleranceSec Reject deliveries older than this many seconds
+   *   (replay protection). Defaults to 300. Pass 0 to skip the timestamp check.
+   */
+  static async verifyWebhookSignature(
+    secret: string,
+    signatureHeader: string,
+    rawBody: string,
+    toleranceSec = 300
+  ): Promise<boolean> {
+    const match = /(?:^|,)t=(\d+),v1=([0-9a-f]+)/.exec(signatureHeader.trim());
+    if (!match) return false;
+    const [, t, v1] = match;
+    if (toleranceSec > 0) {
+      const ageSec = Math.abs(Date.now() / 1000 - Number(t));
+      if (ageSec > toleranceSec) return false;
+    }
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const sig = await crypto.subtle.sign("HMAC", key, enc.encode(`${t}.${rawBody}`));
+    const expected = Array.from(new Uint8Array(sig))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    // Constant-time comparison
+    if (expected.length !== v1.length) return false;
+    let diff = 0;
+    for (let i = 0; i < expected.length; i++) {
+      diff |= expected.charCodeAt(i) ^ v1.charCodeAt(i);
+    }
+    return diff === 0;
   }
 }

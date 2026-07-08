@@ -113,10 +113,26 @@ server.registerTool(
 );
 
 server.registerTool(
+  "holder_cancel_token",
+  {
+    description:
+      "Self-cancel a Right Token as its current holder (proven by the verification code). May be rejected by the location's policy (policy_cancel_disabled). Irreversible. Rate limited like verify.",
+    inputSchema: {
+      tokenId: z.string().describe("Token ID (tok_...)"),
+      verificationCode: z
+        .string()
+        .describe("Current verification code, proving holder authority"),
+    },
+  },
+  ({ tokenId, verificationCode }) =>
+    run(() => client.holderCancelToken(tokenId, verificationCode))
+);
+
+server.registerTool(
   "get_location_policy",
   {
     description:
-      "Get a location's effective policy (transferability, max transfers, default validity). Public for transparency.",
+      "Get a location's effective policy (transferability, max transfers, default validity, holder self-cancellation). Resolution: industry preset -> country overlay -> location override. Public for transparency.",
     inputSchema: { locationId: z.string().describe("Location ID (loc_...)") },
   },
   ({ locationId }) => run(() => client.getLocationPolicy(locationId))
@@ -186,6 +202,10 @@ server.registerTool(
         .describe("Max transfers; null = unlimited"),
       defaultValidityMinutes: z.number().int().min(5).max(43200).optional(),
       verificationRequirement: z.enum(["none", "external_id"]).optional(),
+      holderCancellable: z
+        .boolean()
+        .optional()
+        .describe("Whether the current holder can self-cancel the token"),
     },
   },
   ({ locationId, reset, ...patch }) =>
@@ -245,10 +265,21 @@ server.registerTool(
 );
 
 server.registerTool(
+  "get_policy_history",
+  {
+    description:
+      "Policy change audit log for a location (before/after overrides, newest first). Append-only." +
+      NEEDS_KEY,
+    inputSchema: { locationId: z.string().describe("Location ID (loc_...)") },
+  },
+  ({ locationId }) => run(() => client.getLocationPolicyHistory(locationId))
+);
+
+server.registerTool(
   "export_data",
   {
     description:
-      "Export all organization data (locations, tokens, verification logs) as JSON. Contains no secret values." +
+      "Export all organization data (locations, tokens, verification logs, policy change history) as JSON. Contains no secret values." +
       NEEDS_KEY,
     inputSchema: {},
   },

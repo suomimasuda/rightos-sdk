@@ -77,6 +77,20 @@ export interface RightPolicy {
   maxTransfers: number | null;
   defaultValidityMinutes: number;
   verificationRequirement: "none" | "external_id";
+  /** Whether the current holder can self-cancel the token (Policy Phase 2). */
+  holderCancellable: boolean;
+}
+
+/** Policy change audit record (append-only; contains no personal data). */
+export interface PolicyChange {
+  id: string;
+  locationId: string;
+  organizationId: string;
+  /** Override in effect before the change (null = preset/overlay only). */
+  before: Partial<RightPolicy> | null;
+  /** Override in effect after the change (null = reset to preset). */
+  after: Partial<RightPolicy> | null;
+  createdAt: string;
 }
 
 export type RightTokenStatus =
@@ -252,6 +266,24 @@ export class RightOS {
     });
   }
 
+  /**
+   * Self-cancel a token as its current holder (proven by the verificationCode).
+   * Throws RightOSError with code "policy_cancel_disabled" (HTTP 409) when the
+   * location's policy forbids holder self-cancellation. Rate limited like verify.
+   */
+  async holderCancelToken(
+    tokenId: string,
+    verificationCode: string
+  ): Promise<RightToken> {
+    const data = await request<{ token: RightToken }>(
+      this.opts,
+      "POST",
+      `/api/rightos/tokens/${encodeURIComponent(tokenId)}/holder-cancel`,
+      { verificationCode }
+    );
+    return data.token;
+  }
+
   /** Get a location's effective policy (public, for transparency). */
   async getLocationPolicy(locationId: string): Promise<LocationPolicyResponse> {
     return request(
@@ -316,6 +348,19 @@ export class RightOS {
       `/api/rightos/locations/${encodeURIComponent(locationId)}/policy`,
       patch
     );
+  }
+
+  /**
+   * Policy change audit log for a location (own organization only).
+   * Records are append-only and returned newest first.
+   */
+  async getLocationPolicyHistory(locationId: string): Promise<PolicyChange[]> {
+    const data = await request<{ changes: PolicyChange[] }>(
+      this.opts,
+      "GET",
+      `/api/rightos/locations/${encodeURIComponent(locationId)}/policy/history`
+    );
+    return data.changes;
   }
 
   /**
@@ -394,5 +439,14 @@ export class RightOS {
     baseUrl: string = DEFAULT_BASE_URL
   ): Promise<IssuedToken> {
     return new RightOS({ baseUrl }).transferToken(tokenId, currentVerificationCode);
+  }
+
+  /** Holder self-cancel without constructing a client. */
+  static holderCancel(
+    tokenId: string,
+    verificationCode: string,
+    baseUrl: string = DEFAULT_BASE_URL
+  ): Promise<RightToken> {
+    return new RightOS({ baseUrl }).holderCancelToken(tokenId, verificationCode);
   }
 }

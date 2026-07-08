@@ -25,7 +25,7 @@ import urllib.request
 from typing import Any, Optional
 
 __all__ = ["RightOS", "RightOSError", "DEFAULT_BASE_URL"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 DEFAULT_BASE_URL = "https://rightos.i-s3.com"
 
@@ -124,6 +124,19 @@ class RightOS:
             {"verificationCode": current_verification_code},
         )
 
+    def holder_cancel_token(self, token_id: str, verification_code: str) -> dict:
+        """Self-cancel a token as its current holder (Policy Phase 2).
+
+        Possession is proven by the verificationCode. Raises RightOSError
+        with code "policy_cancel_disabled" (HTTP 409) when the location's
+        policy forbids holder self-cancellation. Rate limited like verify.
+        """
+        return self._request(
+            "POST",
+            f"/api/rightos/tokens/{token_id}/holder-cancel",
+            {"verificationCode": verification_code},
+        )["token"]
+
     def get_location_policy(self, location_id: str) -> dict:
         """Get a location's effective policy (public, for transparency)."""
         return self._request("GET", f"/api/rightos/locations/{location_id}/policy")
@@ -170,6 +183,15 @@ class RightOS:
         return self._request(
             "PUT", f"/api/rightos/locations/{location_id}/policy", patch
         )
+
+    def get_location_policy_history(self, location_id: str) -> list[dict]:
+        """Policy change audit log for a location (own organization only).
+
+        Records are append-only and returned newest first.
+        """
+        return self._request(
+            "GET", f"/api/rightos/locations/{location_id}/policy/history"
+        )["changes"]
 
     def issue_token(
         self,

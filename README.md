@@ -12,8 +12,24 @@ Both SDKs are **zero-dependency single files** — install via a package manager
 
 | Language | Package | Single file | Requirements |
 |---|---|---|---|
-| TypeScript | [`typescript/`](./typescript) (`@i-s3/rightos`) | [rightos.ts](https://rightos.i-s3.com/sdk/rightos.ts) | Node.js ≥ 18 or a modern browser |
-| Python | [`python/`](./python) (`rightos-sdk`) | [rightos.py](https://rightos.i-s3.com/sdk/rightos.py) | Python ≥ 3.9, standard library only |
+| TypeScript | [`typescript/`](./typescript) — [`@i-s3/rightos`](https://www.npmjs.com/package/@i-s3/rightos) | [rightos.ts](https://rightos.i-s3.com/sdk/rightos.ts) | Node.js ≥ 18 or a modern browser |
+| Python | [`python/`](./python) — [`rightos-sdk`](https://pypi.org/project/rightos-sdk/) | [rightos.py](https://rightos.i-s3.com/sdk/rightos.py) | Python ≥ 3.9, standard library only |
+
+## MCP server (for AI agents)
+
+[`mcp/`](./mcp) — `@i-s3/rightos-mcp`: an [MCP](https://modelcontextprotocol.io/) server that gives AI agents (Cursor, Claude Desktop, etc.) 12 tools for issuing, verifying, and transferring Right Tokens.
+
+```json
+{
+  "mcpServers": {
+    "rightos": {
+      "command": "npx",
+      "args": ["-y", "@i-s3/rightos-mcp"],
+      "env": { "RIGHTOS_API_KEY": "rk_live_..." }
+    }
+  }
+}
+```
 
 ## Quick example (TypeScript)
 

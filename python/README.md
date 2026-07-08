@@ -1,0 +1,77 @@
+# rightos-sdk — RightOS Python SDK
+
+Official Python SDK for [RightOS](https://rightos.i-s3.com/software/rightos) — privacy-preserving rights verification infrastructure. Issue and verify digital QR tickets ("Right Tokens") for queues, reservations, EV charging, and package pickup, without ever collecting end users' names or phone numbers.
+
+- Zero dependencies (standard library only), Python ≥ 3.9
+- Machine-readable spec: [openapi.json](https://rightos.i-s3.com/openapi.json) · AI-agent docs: [llms-full.txt](https://rightos.i-s3.com/llms-full.txt)
+
+> RightOS is not a taxi or ride-hailing service. It does not arrange vehicles, set fares, assign drivers, or broker dispatch.
+
+## Install
+
+```bash
+pip install rightos-sdk
+```
+
+## Quickstart (60 seconds)
+
+```python
+from rightos import RightOS
+
+# 1. Register once (the apiKey is returned EXACTLY ONCE — store it securely)
+pub = RightOS()
+reg = pub.register_organization(name="My Shop", contact_email="you@example.com", plan_id="free")
+api_key = reg["apiKey"]
+
+# 2. Operator client
+client = RightOS(api_key=api_key)
+
+# 3. Issue a digital QR ticket
+location = client.list_locations()[0]
+issued = client.issue_token(location_id=location["id"], title="Queue ticket")
+print("Hand this to your customer:", issued["walletUrl"])
+
+# 4. Verify on arrival (no API key needed)
+outcome = RightOS().verify_token(issued["token"]["id"], issued["verificationCode"])
+print(outcome["result"])  # "success"
+
+# 5. Mark as used after service
+client.use_token(issued["token"]["id"])
+```
+
+## Location policies (Policy Engine)
+
+```python
+policy = client.get_location_policy(location["id"])["policy"]
+# {"transferable": True, "maxTransfers": 3, "defaultValidityMinutes": 720, ...}
+
+client.set_location_policy(location["id"], {"transferable": False})  # override
+client.set_location_policy(location["id"], None)  # reset to industry preset
+```
+
+## Error handling
+
+```python
+from rightos import RightOS, RightOSError
+
+try:
+    RightOS().transfer_token(token_id, code)
+except RightOSError as e:
+    if e.code == "policy_transfer_disabled":
+        ...  # this location forbids transfers
+    elif e.status == 429:
+        ...  # rate limited; wait e.retry_after_sec
+```
+
+Common codes: `missing_api_key` / `invalid_api_key` (401), plan limits (402), `policy_transfer_disabled` / `transfer_limit_reached` (409), `rate_limited` (429).
+
+## Try it against the live demo
+
+```python
+demo = RightOS(api_key="rk_demo_00000000000000000000")  # shared demo org
+print(demo.list_locations())
+```
+
+## License
+
+MIT © I-S3 Inc.

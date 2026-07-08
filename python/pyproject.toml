@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rightos-sdk"
+version = "0.1.0"
+description = "Official Python SDK for RightOS - privacy-preserving rights verification API (digital QR tickets for queues, reservations, EV charging, package pickup)."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "I-S3 Software Division" }]
+requires-python = ">=3.9"
+keywords = ["rightos", "queue", "digital-ticket", "qr", "verification", "i-s3"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://rightos.i-s3.com/software/rightos/docs"
+Repository = "https://github.com/suomimasuda/rightos-sdk"
+"API Spec" = "https://rightos.i-s3.com/openapi.json"
+
+[tool.hatch.build.targets.wheel]
+packages = ["rightos"]

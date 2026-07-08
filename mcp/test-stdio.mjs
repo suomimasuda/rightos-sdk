@@ -52,7 +52,7 @@ notify("notifications/initialized", {});
 
 const tools = await rpc("tools/list", {});
 const names = tools.result.tools.map((t) => t.name).sort();
-check("tools/list returns 18 tools", names.length === 18, `got ${names.length}: ${names.join(",")}`);
+check("tools/list returns 15 tools", names.length === 15, `got ${names.length}: ${names.join(",")}`);
 
 const plans = await rpc("tools/call", { name: "list_plans", arguments: {} });
 const plansData = JSON.parse(plans.result.content[0].text);

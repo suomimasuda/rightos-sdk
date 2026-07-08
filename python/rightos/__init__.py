@@ -30,7 +30,7 @@ __all__ = [
     "DEFAULT_BASE_URL",
     "verify_webhook_signature",
 ]
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 DEFAULT_BASE_URL = "https://rightos.i-s3.com"
 
@@ -240,7 +240,11 @@ class RightOS:
         return self._request("POST", f"/api/rightos/tokens/{token_id}/cancel")["token"]
 
     def list_webhooks(self) -> list:
-        """List your organization's webhooks (never includes signing secrets)."""
+        """List your organization's webhooks (never includes signing secrets).
+
+        Each webhook may include ``lastDelivery`` (at, event, ok, status?, error?),
+        ``deliveredCount``, and ``failedCount`` for delivery observability.
+        """
         return self._request("GET", "/api/rightos/webhooks")["webhooks"]
 
     def create_webhook(self, url: str, events: Optional[list] = None) -> dict:

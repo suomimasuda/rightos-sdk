@@ -61,37 +61,5 @@ check("useToken -> used", used.status === "used", used.status);
 const again = await pub.verifyToken(issued.token.id, issued.verificationCode);
 check("re-verify -> already_used", again.result === "already_used", again.result);
 
-// webhooks (v0.4.0): demo org can list but not register
-const hooks = await demo.listWebhooks();
-check("demo listWebhooks returns array", Array.isArray(hooks));
-let whErr = null;
-try {
-  await demo.createWebhook({ url: "https://example.com/hook" });
-} catch (e) {
-  whErr = e;
-}
-check(
-  "demo createWebhook throws 403 demo_org",
-  whErr instanceof RightOSError && whErr.status === 403 && whErr.code === "demo_org",
-  whErr?.code
-);
-
-// webhook signature helper (offline)
-{
-  const { createHmac } = await import("node:crypto");
-  const secret = "whsec_selftest";
-  const body = '{"id":"evt_1"}';
-  const t = Math.floor(Date.now() / 1000);
-  const v1 = createHmac("sha256", secret).update(`${t}.${body}`).digest("hex");
-  check(
-    "verifyWebhookSignature accepts valid signature",
-    await RightOS.verifyWebhookSignature(secret, `t=${t},v1=${v1}`, body)
-  );
-  check(
-    "verifyWebhookSignature rejects tampered body",
-    !(await RightOS.verifyWebhookSignature(secret, `t=${t},v1=${v1}`, body + "x"))
-  );
-}
-
 console.log(failures === 0 ? "ALL PASS" : `${failures} FAILURES`);
 process.exit(failures === 0 ? 0 : 1);

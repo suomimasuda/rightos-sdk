@@ -172,6 +172,23 @@ export interface Webhook {
   url: string;
   events: WebhookEventType[];
   createdAt: string;
+  /** Most recent delivery attempt (observability). */
+  lastDelivery?: WebhookDeliveryResult;
+  /** Total successful deliveries. */
+  deliveredCount?: number;
+  /** Total failed deliveries. */
+  failedCount?: number;
+}
+
+/** Result of the most recent webhook delivery attempt. */
+export interface WebhookDeliveryResult {
+  at: string;
+  event: WebhookEventType;
+  ok: boolean;
+  /** HTTP status code (undefined on connection failure or timeout). */
+  status?: number;
+  /** Short error description (no secrets or full URLs). */
+  error?: string;
 }
 
 export interface CreatedWebhook {

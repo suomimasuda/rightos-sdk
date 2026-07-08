@@ -80,7 +80,7 @@ jobs:
           base="https://rightos.i-s3.com"
           code=$(curl -s -o /dev/null -w "%{http_code}" "$base/software/rightos")
           test "$code" = "200" || { echo "LP returned $code"; exit 1; }
-          plans=$(curl -s "$base/api/rightos/plans" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")
+          plans=$(curl -s "$base/api/rightos/plans" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['plans']))")
           test "$plans" = "5" || { echo "plans returned $plans entries"; exit 1; }
           curl -s "$base/api/rightos/billing/config" | grep -q '"enabled":true' || { echo "billing not enabled"; exit 1; }
           echo "production health OK"

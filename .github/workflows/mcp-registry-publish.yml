@@ -1,0 +1,67 @@
+# Publish @i-s3/rightos-mcp to npm and the official MCP Registry.
+# Trigger: push tag mcp-vX.Y.Z (version must match package.json and server.json).
+name: mcp-registry-publish
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "mcp-v*"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Validate tag matches package and server.json versions
+        if: startsWith(github.ref, 'refs/tags/mcp-v')
+        run: |
+          set -eu
+          TAG="${GITHUB_REF#refs/tags/}"
+          EXPECTED="${TAG#mcp-v}"
+          PKG_VER=$(node -p "require('./package.json').version")
+          SERVER_VER=$(node -p "require('./server.json').version")
+          echo "tag=$TAG expected=$EXPECTED pkg=$PKG_VER server=$SERVER_VER"
+          test "$EXPECTED" = "$PKG_VER" || { echo "package.json version mismatch"; exit 1; }
+          test "$EXPECTED" = "$SERVER_VER" || { echo "server.json version mismatch"; exit 1; }
+
+      - name: Build MCP server
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish to npm
+        if: startsWith(github.ref, 'refs/tags/mcp-v')
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Install MCP Publisher CLI
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" \
+            | tar xz mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+
+      - name: Login to MCP Registry (GitHub OIDC)
+        run: mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: mcp-publisher publish
+
+      - name: Verify registry listing
+        run: |
+          curl -fsS "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.suomimasuda/rightos-mcp" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['metadata']['count']>=1, d; print('registry OK:', d['servers'][0]['server']['name'], d['servers'][0]['server']['version'])"

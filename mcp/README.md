@@ -1,6 +1,10 @@
 # @i-s3/rightos-mcp — RightOS MCP Server
 
-[MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server for [RightOS](https://rightos.i-s3.com/software/rightos) — lets AI agents issue, verify, and transfer digital QR tickets ("Right Tokens") for queues, reservations, EV charging, and package pickup, without writing HTTP code.
+<!-- mcp-name: io.github.suomimasuda/rightos-mcp -->
+
+[MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server for [RightOS](https://rightos.i-s3.com/software/rightos) — lets AI agents issue, verify, and transfer digital QR tickets for **queues, clinic waiting, EV charging, events, and package pickup** without writing HTTP code.
+
+**For coding agents:** start with `npx -y @i-s3/rightos-mcp` and demo key `rk_demo_00000000000000000000`. Full docs: [llms-full.txt](https://rightos.i-s3.com/llms-full.txt) · [OpenAPI](https://rightos.i-s3.com/openapi.json) · [ai.txt](https://rightos.i-s3.com/ai.txt)
 
 RightOS verifies that **a valid right is present — never who the person is**. No names, phone numbers, or birthdates are required from end users.
 
@@ -66,10 +70,11 @@ Operator (requires `RIGHTOS_API_KEY`):
 
 ## Resources
 
-- [Developer documentation](https://rightos.i-s3.com/software/rightos/docs)
+- [MCP setup (human-readable)](https://rightos.i-s3.com/software/rightos/docs/mcp)
+- [ai.txt](https://rightos.i-s3.com/ai.txt) · [llms.txt](https://rightos.i-s3.com/llms.txt) · [llms-full.txt](https://rightos.i-s3.com/llms-full.txt)
 - [OpenAPI 3.1 specification](https://rightos.i-s3.com/openapi.json)
-- [Full documentation for AI agents (llms-full.txt)](https://rightos.i-s3.com/llms-full.txt)
 - [TypeScript SDK `@i-s3/rightos`](https://www.npmjs.com/package/@i-s3/rightos) · [Python SDK `rightos-sdk`](https://pypi.org/project/rightos-sdk/)
+- [MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.suomimasuda/rightos-mcp) (published): `io.github.suomimasuda/rightos-mcp`
 
 ## License
 

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.suomimasuda/rightos-mcp",
+  "description": "RightOS MCP: privacy-first QR queue/EV/pickup. 18 tools, no end-user PII.",
+  "version": "0.4.2",
+  "websiteUrl": "https://rightos.i-s3.com/software/rightos/docs/mcp",
+  "repository": {
+    "url": "https://github.com/suomimasuda/rightos-sdk",
+    "source": "github",
+    "subfolder": "mcp"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@i-s3/rightos-mcp",
+      "version": "0.4.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "npx",
+      "environmentVariables": [
+        {
+          "name": "RIGHTOS_API_KEY",
+          "description": "Operator API key (optional; demo: rk_demo_00000000000000000000)",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "RIGHTOS_BASE_URL",
+          "description": "Override API base URL (default: production)",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

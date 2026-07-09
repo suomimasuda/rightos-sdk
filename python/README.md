@@ -5,6 +5,8 @@ Official Python SDK for [RightOS](https://rightos.i-s3.com/software/rightos) —
 - Zero dependencies (standard library only), Python ≥ 3.9
 - Machine-readable spec: [openapi.json](https://rightos.i-s3.com/openapi.json) · AI-agent docs: [llms-full.txt](https://rightos.i-s3.com/llms-full.txt)
 
+**Links:** [Sign up free](https://rightos.i-s3.com/software/rightos/signup?plan=free) · [Pricing](https://rightos.i-s3.com/software/rightos/pricing) · [MCP setup](https://rightos.i-s3.com/software/rightos/docs/mcp) · [Use cases](https://rightos.i-s3.com/software/rightos/use-cases/shop) · [Usage insights](https://rightos.i-s3.com/software/rightos/insights)
+
 > RightOS is not a taxi or ride-hailing service. It does not arrange vehicles, set fares, assign drivers, or broker dispatch.
 
 ## Install

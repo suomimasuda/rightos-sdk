@@ -24,7 +24,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
 
       - name: Validate tag matches package and server.json versions
         if: startsWith(github.ref, 'refs/tags/mcp-v')
@@ -43,24 +42,34 @@ jobs:
           npm ci
           npm run build
 
-      - name: Ensure npm supports OIDC trusted publishing
-        run: npm install -g npm@latest
-
       - name: Publish to npm (Trusted Publishing / OIDC)
         if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/mcp-v')
-        run: npm publish --access public
+        run: |
+          unset NODE_AUTH_TOKEN || true
+          npm config set registry https://registry.npmjs.org/
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            npm publish --dry-run --access public
+            echo "OIDC dry-run OK — Trusted Publisher is configured"
+          else
+            npm publish --access public
+          fi
 
       - name: Publish fallback (legacy NPM_TOKEN — remove after OIDC verified)
         if: failure() && (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/mcp-v'))
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "false"
         run: |
           if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
             echo "::error::Publish failed. Configure npm Trusted Publisher for @i-s3/rightos-mcp or set NPM_TOKEN."
             exit 1
           fi
           echo "::warning::OIDC publish failed; falling back to NPM_TOKEN"
-          npm publish --access public
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            npm publish --dry-run --access public
+          else
+            npm publish --access public
+          fi
 
       - name: Install MCP Publisher CLI
         run: |

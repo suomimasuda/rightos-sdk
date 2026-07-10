@@ -23,7 +23,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org
 
       - name: Validate tag matches package and server.json versions
@@ -69,5 +69,14 @@ jobs:
 
       - name: Verify registry listing
         run: |
+          PKG_VER=$(node -p "require('./package.json').version")
+          export PKG_VER
           curl -fsS "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.suomimasuda/rightos-mcp" \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['metadata']['count']>=1, d; print('registry OK:', d['servers'][0]['server']['name'], d['servers'][0]['server']['version'])"
+            | python3 -c "
+          import json, sys, os
+          expected = os.environ['PKG_VER']
+          d = json.load(sys.stdin)
+          versions = [s['server']['version'] for s in d.get('servers', [])]
+          assert expected in versions, f'expected {expected} in registry, got {versions}'
+          print('registry OK:', d['servers'][0]['server']['name'], 'versions', versions)
+          "

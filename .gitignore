@@ -1,6 +1,6 @@
 node_modules/
 dist/
-__pycache__/
-*.egg-info/
-build/
+*.tsbuildinfo
 .DS_Store
+.env
+.env.*

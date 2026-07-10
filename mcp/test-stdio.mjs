@@ -52,7 +52,32 @@ notify("notifications/initialized", {});
 
 const tools = await rpc("tools/list", {});
 const names = tools.result.tools.map((t) => t.name).sort();
-check("tools/list returns 15 tools", names.length === 15, `got ${names.length}: ${names.join(",")}`);
+const EXPECTED_TOOL_NAMES = [
+  "cancel_token",
+  "create_location",
+  "create_webhook",
+  "delete_webhook",
+  "export_data",
+  "get_location_policy",
+  "get_policy_history",
+  "get_token",
+  "holder_cancel_token",
+  "issue_token",
+  "list_locations",
+  "list_plans",
+  "list_policies",
+  "list_webhooks",
+  "set_location_policy",
+  "transfer_token",
+  "use_token",
+  "verify_token",
+];
+check(
+  "tools/list returns all expected tools",
+  names.length === EXPECTED_TOOL_NAMES.length &&
+    names.every((name, i) => name === EXPECTED_TOOL_NAMES[i]),
+  `got ${names.length}: ${names.join(",")}`
+);
 
 const plans = await rpc("tools/call", { name: "list_plans", arguments: {} });
 const plansData = JSON.parse(plans.result.content[0].text);

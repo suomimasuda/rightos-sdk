@@ -28,7 +28,7 @@ Add to your MCP client configuration (Cursor, Claude Desktop, etc.):
 }
 ```
 
-`RIGHTOS_API_KEY` is optional. Without it, only the public tools work (plans, token lookup, verify, transfer, location policy). Get a key by [registering an organization](https://rightos.i-s3.com/software/rightos/signup) — free tier, no credit card.
+`RIGHTOS_API_KEY` is optional. Without it, only the public tools work (plans, token lookup, verify, transfer, holder cancel, location policy, policy presets). Get a key by [registering an organization](https://rightos.i-s3.com/software/rightos/signup) — free tier, no credit card.
 
 To try it with the shared demo organization, set `RIGHTOS_API_KEY` to `rk_demo_00000000000000000000`.
 

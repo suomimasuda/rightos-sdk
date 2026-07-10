@@ -1,0 +1,50 @@
+# Publish @i-s3/rightos (TypeScript SDK) to npm.
+# Trigger: push tag sdk-vX.Y.Z (version must match typescript/package.json).
+name: sdk-publish
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "sdk-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: typescript
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Validate tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/sdk-v')
+        run: |
+          set -eu
+          TAG="${GITHUB_REF#refs/tags/}"
+          EXPECTED="${TAG#sdk-v}"
+          PKG_VER=$(node -p "require('./package.json').version")
+          test "$EXPECTED" = "$PKG_VER" || { echo "package.json version mismatch"; exit 1; }
+
+      - name: Build TypeScript SDK
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::error::NPM_TOKEN secret is required for sdk publish"
+            exit 1
+          fi
+          npm publish --access public

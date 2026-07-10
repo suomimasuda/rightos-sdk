@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rightos-sdk"
-version = "0.4.1"
+version = "0.4.4"
 description = "Official Python SDK for RightOS - privacy-preserving rights verification API (digital QR tickets for queues, reservations, EV charging, package pickup)."
 readme = "README.md"
 license = { text = "MIT" }

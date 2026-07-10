@@ -1,9 +1,24 @@
 {
   "name": "@i-s3/rightos",
-  "version": "0.4.1",
-  "description": "Official TypeScript SDK for RightOS — privacy-preserving rights verification API (digital QR tickets for queues, reservations, EV charging, package pickup).",
-  "keywords": ["rightos", "queue", "digital-ticket", "qr", "verification", "i-s3"],
+  "version": "0.4.4",
+  "description": "TypeScript SDK for RightOS — privacy-first queue/EV/pickup QR API. No end-user PII. OpenAPI + MCP (@i-s3/rightos-mcp).",
+  "keywords": [
+    "rightos",
+    "queue",
+    "queue-management",
+    "digital-ticket",
+    "qr",
+    "verification",
+    "privacy",
+    "api",
+    "ev-charging",
+    "clinic",
+    "i-s3"
+  ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "I-S3 Software Division",
   "homepage": "https://rightos.i-s3.com/software/rightos/docs",
   "repository": {

@@ -30,6 +30,15 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Verify SDK versions are aligned
+        run: |
+          TS=$(node -p "require('./typescript/package.json').version")
+          MCP=$(node -p "require('./mcp/package.json').version")
+          SERVER=$(node -p "require('./mcp/server.json').version")
+          PY=$(grep '^version = ' python/pyproject.toml | sed 's/.*"\(.*\)".*/\1/')
+          echo "typescript=$TS mcp=$MCP server=$SERVER python=$PY"
+          test "$TS" = "$MCP" && test "$TS" = "$SERVER" && test "$TS" = "$PY"
+
       - name: Build TypeScript SDK
         working-directory: typescript
         run: |

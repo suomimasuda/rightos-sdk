@@ -49,6 +49,10 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            if [ "${GITHUB_REF#refs/tags/}" != "${GITHUB_REF}" ]; then
+              echo "::error::NPM_TOKEN secret is required for tagged releases"
+              exit 1
+            fi
             echo "::warning::NPM_TOKEN secret is not set — skipping npm publish."
             echo "Publish manually: cd mcp && npm publish --access public"
             exit 0

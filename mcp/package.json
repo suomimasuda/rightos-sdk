@@ -1,6 +1,6 @@
 {
   "name": "@i-s3/rightos-mcp",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "MCP server for RightOS — queue/EV/pickup QR tickets for AI agents (Cursor, Claude). 18 tools, privacy-first, no end-user PII. npm: npx -y @i-s3/rightos-mcp",
   "mcpName": "io.github.suomimasuda/rightos-mcp",
   "keywords": [

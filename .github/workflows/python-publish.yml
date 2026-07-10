@@ -1,0 +1,47 @@
+# Publish rightos-sdk to PyPI.
+# Auth: PyPI Trusted Publishing (OIDC) — no long-lived API token required.
+# One-time setup: https://pypi.org/manage/project/rightos-sdk/publishing/
+#   Owner: suomimasuda | repo: rightos-sdk | workflow: python-publish.yml
+name: python-publish
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "python-v*"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate tag matches pyproject.toml
+        if: startsWith(github.ref, 'refs/tags/python-v')
+        run: |
+          set -eu
+          TAG="${GITHUB_REF#refs/tags/}"
+          EXPECTED="${TAG#python-v}"
+          PY_VER=$(grep '^version = ' pyproject.toml | sed 's/.*"\(.*\)".*/\1/')
+          test "$EXPECTED" = "$PY_VER" || { echo "pyproject.toml version mismatch"; exit 1; }
+
+      - name: Build wheel and sdist
+        run: |
+          pip install build
+          python -m build
+
+      - name: Publish to PyPI (Trusted Publishing / OIDC)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/dist

@@ -1,5 +1,7 @@
 # Publish @i-s3/rightos (TypeScript SDK) to npm.
-# Trigger: push tag sdk-vX.Y.Z (version must match typescript/package.json).
+# Auth: npm Trusted Publishing (OIDC) — no long-lived NPM_TOKEN required.
+# One-time setup: https://www.npmjs.com/package/@i-s3/rightos → Settings → Trusted Publisher
+#   GitHub user: suomimasuda | repo: rightos-sdk | workflow: sdk-publish.yml
 name: sdk-publish
 
 on:
@@ -9,6 +11,7 @@ on:
       - "sdk-v*"
 
 permissions:
+  id-token: write
   contents: read
 
 jobs:
@@ -22,8 +25,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
+
+      - name: Ensure npm supports OIDC trusted publishing
+        run: npm install -g npm@latest
 
       - name: Validate tag matches package.json
         if: startsWith(github.ref, 'refs/tags/sdk-v')
@@ -39,12 +45,17 @@ jobs:
           npm install
           npm run build
 
-      - name: Publish to npm
+      - name: Publish to npm (Trusted Publishing / OIDC)
+        run: npm publish --access public
+
+      - name: Publish fallback (legacy NPM_TOKEN — remove after OIDC verified)
+        if: failure()
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "::error::NPM_TOKEN secret is required for sdk publish"
+            echo "::error::Publish failed. Configure npm Trusted Publisher or set NPM_TOKEN."
             exit 1
           fi
+          echo "::warning::OIDC publish failed; falling back to NPM_TOKEN"
           npm publish --access public

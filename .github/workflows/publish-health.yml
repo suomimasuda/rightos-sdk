@@ -1,0 +1,86 @@
+# Weekly publish pipeline health — fails loudly if credentials or registries break.
+# GitHub sends email to repo watchers on failure (Settings → Notifications).
+name: publish-health
+
+on:
+  schedule:
+    # Monday 00:00 UTC = 09:00 JST
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Ensure npm supports OIDC trusted publishing
+        run: npm install -g npm@latest
+
+      - name: npm registry — package versions
+        run: |
+          set -eu
+          TS=$(npm view @i-s3/rightos version)
+          MCP=$(npm view @i-s3/rightos-mcp version)
+          PKG=$(node -p "require('./typescript/package.json').version")
+          MCP_PKG=$(node -p "require('./mcp/package.json').version")
+          echo "npm @i-s3/rightos=$TS (repo typescript=$PKG)"
+          echo "npm @i-s3/rightos-mcp=$MCP (repo mcp=$MCP_PKG)"
+          test "$TS" = "$PKG" || { echo "::error::npm @i-s3/rightos ($TS) lags repo ($PKG) — run sdk-publish"; exit 1; }
+          test "$MCP" = "$MCP_PKG" || { echo "::error::npm @i-s3/rightos-mcp ($MCP) lags repo ($MCP_PKG) — run mcp-registry-publish"; exit 1; }
+
+      - name: npm — legacy NPM_TOKEN still valid (remove after OIDC migration)
+        continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM_TOKEN not set — skipped (OK if using Trusted Publishing only)"
+            exit 0
+          fi
+          npm whoami
+          echo "NPM_TOKEN valid. Migrate to npm Trusted Publishing to avoid 90-day expiry."
+
+      - name: MCP Registry listing
+        working-directory: mcp
+        run: |
+          PKG_VER=$(node -p "require('./package.json').version")
+          curl -fsS "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.suomimasuda/rightos-mcp" \
+            | python3 -c "
+          import json, sys
+          expected = sys.argv[1]
+          d = json.load(sys.stdin)
+          versions = [s['server']['version'] for s in d.get('servers', [])]
+          assert expected in versions, f'expected {expected} in registry, got {versions}'
+          print('MCP Registry OK', versions)
+          " "$PKG_VER"
+
+      - name: PyPI — rightos-sdk version (informational)
+        continue-on-error: true
+        run: |
+          PY=$(grep '^version = ' python/pyproject.toml | sed 's/.*"\(.*\)".*/\1/')
+          REMOTE=$(curl -fsS "https://pypi.org/pypi/rightos-sdk/json" | python3 -c "import json,sys; print(json.load(sys.stdin)['info']['version'])")
+          echo "pypi rightos-sdk=$REMOTE (repo python=$PY)"
+          if [ "$REMOTE" != "$PY" ]; then
+            echo "::warning::PyPI ($REMOTE) lags repo ($PY) — configure PyPI Trusted Publishing and run python-publish"
+          fi
+
+      - name: Production API smoke (read-only)
+        run: |
+          curl -sf "https://rightos.i-s3.com/api/rightos/status" | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)
+          assert d['status'] == 'operational', d
+          for k in ('billing', 'email', 'webhooks', 'adminAuth'):
+            assert d['checks'][k]['configured'], f'{k} not configured'
+          print('production status OK', d.get('revision'))
+          "

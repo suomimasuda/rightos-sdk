@@ -48,14 +48,27 @@ jobs:
           unset NODE_AUTH_TOKEN || true
           npm config set registry https://registry.npmjs.org/
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            npm publish --dry-run --access public
-            echo "OIDC dry-run OK — Trusted Publisher is configured"
+            set +e
+            out=$(npm publish --dry-run --access public 2>&1)
+            code=$?
+            set -e
+            echo "$out"
+            if [ "$code" -eq 0 ]; then
+              echo "OIDC dry-run OK — Trusted Publisher is configured"
+            elif echo "$out" | grep -q "cannot publish over the previously published versions"; then
+              echo "OIDC OK — auth verified (version already on npm registry)"
+            elif echo "$out" | grep -qiE 'ENEEDAUTH|401 Unauthorized|403 Forbidden|404 Not Found - PUT'; then
+              echo "::error::OIDC/auth failed — check Trusted Publisher settings"
+              exit 1
+            else
+              exit "$code"
+            fi
           else
             npm publish --access public
           fi
 
       - name: Publish fallback (legacy NPM_TOKEN — remove after OIDC verified)
-        if: failure() && (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/mcp-v'))
+        if: failure() && startsWith(github.ref, 'refs/tags/mcp-v')
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "false"

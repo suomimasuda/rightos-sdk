@@ -1,6 +1,8 @@
 node_modules/
 dist/
 mcp-publisher
+__pycache__/
+*.pyc
 *.tsbuildinfo
 .DS_Store
 .env

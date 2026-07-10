@@ -34,18 +34,6 @@ jobs:
           test "$TS" = "$PKG" || { echo "::error::npm @i-s3/rightos ($TS) lags repo ($PKG) — run sdk-publish"; exit 1; }
           test "$MCP" = "$MCP_PKG" || { echo "::error::npm @i-s3/rightos-mcp ($MCP) lags repo ($MCP_PKG) — run mcp-registry-publish"; exit 1; }
 
-      - name: npm — legacy NPM_TOKEN still valid (remove after OIDC migration)
-        continue-on-error: true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "NPM_TOKEN not set — skipped (OK if using Trusted Publishing only)"
-            exit 0
-          fi
-          npm whoami
-          echo "NPM_TOKEN valid. Migrate to npm Trusted Publishing to avoid 90-day expiry."
-
       - name: MCP Registry listing
         working-directory: mcp
         run: |

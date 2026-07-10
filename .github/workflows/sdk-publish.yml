@@ -64,20 +64,3 @@ jobs:
           else
             npm publish --access public
           fi
-
-      - name: Publish fallback (legacy NPM_TOKEN — remove after OIDC verified)
-        if: failure() && github.event_name != 'workflow_dispatch'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "false"
-        run: |
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "::error::Publish failed. Configure npm Trusted Publisher or set NPM_TOKEN."
-            exit 1
-          fi
-          echo "::warning::OIDC publish failed; falling back to NPM_TOKEN"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            npm publish --dry-run --access public
-          else
-            npm publish --access public
-          fi

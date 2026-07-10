@@ -36,7 +36,7 @@ jobs:
 
       - name: Build TypeScript SDK
         run: |
-          npm ci
+          npm install
           npm run build
 
       - name: Publish to npm

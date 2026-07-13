@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.suomimasuda/rightflow-mcp",
+  "description": "RightFlow MCP: neutral task coordination beside RightOS. No money, dispatch, or robot control.",
+  "version": "0.1.0",
+  "websiteUrl": "https://rightos.i-s3.com/software/rightflow/docs/mcp",
+  "repository": {
+    "url": "https://github.com/suomimasuda/rightos-sdk",
+    "source": "github",
+    "subfolder": "rightflow-mcp"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@i-s3/rightflow-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "npx",
+      "environmentVariables": [
+        {
+          "name": "RIGHTOS_API_KEY",
+          "description": "Organization API key (required for API tools; demo: rk_demo_00000000000000000000)",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "RIGHTOS_BASE_URL",
+          "description": "Override API base URL (default: https://rightos.i-s3.com)",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

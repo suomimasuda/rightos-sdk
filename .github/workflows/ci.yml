@@ -51,6 +51,18 @@ jobs:
           npm ci
           npm run build
 
+      - name: Build RightFlow client
+        working-directory: rightflow
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build RightFlow MCP (resolves published @i-s3/rightflow from npm)
+        working-directory: rightflow-mcp
+        run: |
+          npm ci
+          npm run build
+
       - name: Check Python SDK syntax
         working-directory: python
         run: |
@@ -64,6 +76,8 @@ jobs:
           path: |
             typescript/dist
             mcp/dist
+            rightflow/dist
+            rightflow-mcp/dist
           retention-days: 1
 
   live-tests:

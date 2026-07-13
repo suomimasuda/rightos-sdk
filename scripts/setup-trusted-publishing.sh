@@ -34,8 +34,16 @@ GitHub Actions が短命 OIDC 認証で publish し、トークン更新は不�
 3. 同様に @i-s3/rightos-mcp
    - Workflow filename: mcp-registry-publish.yml
 
-4. 動作確認:
+4. 同様に @i-s3/rightflow
+   - Workflow filename: rightflow-publish.yml
+
+5. 同様に @i-s3/rightflow-mcp
+   - Workflow filename: rightflow-mcp-publish.yml
+
+6. 動作確認:
    gh workflow run sdk-publish -R suomimasuda/rightos-sdk
+   gh workflow run rightflow-publish -R suomimasuda/rightos-sdk
+   gh workflow run rightflow-mcp-publish -R suomimasuda/rightos-sdk
    # ログに "falling back to NPM_TOKEN" が無ければ OIDC 成功
    # 成功後 GitHub Secret NPM_TOKEN は削除可
 
@@ -51,6 +59,16 @@ npm trust github @i-s3/rightos \
 npm trust github @i-s3/rightos-mcp \
   --repo suomimasuda/rightos-sdk \
   --file mcp-registry-publish.yml \
+  --allow-publish --yes
+
+npm trust github @i-s3/rightflow \
+  --repo suomimasuda/rightos-sdk \
+  --file rightflow-publish.yml \
+  --allow-publish --yes
+
+npm trust github @i-s3/rightflow-mcp \
+  --repo suomimasuda/rightos-sdk \
+  --file rightflow-mcp-publish.yml \
   --allow-publish --yes
 
 ■ PyPI（1回・Web のみ、API なし）

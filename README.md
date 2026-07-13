@@ -10,16 +10,27 @@ RightOS turns queues, reservations, EV charging, and package pickup into digital
 
 ## SDKs
 
-Both SDKs are **zero-dependency single files** — install via a package manager or just download the file.
+| Layer | Question | Packages |
+|---|---|---|
+| RightOS | What may be done? | [`@i-s3/rightos`](https://www.npmjs.com/package/@i-s3/rightos) · [`@i-s3/rightos-mcp`](https://www.npmjs.com/package/@i-s3/rightos-mcp) |
+| RightFlow | What should happen next? | [`@i-s3/rightflow`](https://www.npmjs.com/package/@i-s3/rightflow) · [`@i-s3/rightflow-mcp`](https://www.npmjs.com/package/@i-s3/rightflow-mcp) |
+| Execution | How is it done? | your systems |
+
+RightOS / RightFlow SDKs install via package managers (or download the thin client files).
 
 | Language | Package | Single file | Requirements |
 |---|---|---|---|
 | TypeScript | [`typescript/`](./typescript) — [`@i-s3/rightos`](https://www.npmjs.com/package/@i-s3/rightos) | [rightos.ts](https://rightos.i-s3.com/sdk/rightos.ts) | Node.js ≥ 18 or a modern browser |
 | Python | [`python/`](./python) — [`rightos-sdk`](https://pypi.org/project/rightos-sdk/) | [rightos.py](https://rightos.i-s3.com/sdk/rightos.py) | Python ≥ 3.9, standard library only |
+| TypeScript | [`rightflow/`](./rightflow) — [`@i-s3/rightflow`](https://www.npmjs.com/package/@i-s3/rightflow) | [rightflow.ts](https://rightos.i-s3.com/sdk/rightflow.ts) | Node.js ≥ 18 or a modern browser |
 
-## MCP server (for AI agents)
+> RightFlow is coordination beside RightOS — not a redesign. No money, marketplace, dispatch, or robot control in the core.
 
-[`mcp/`](./mcp) — `@i-s3/rightos-mcp`: an [MCP](https://modelcontextprotocol.io/) server that gives AI agents (Cursor, Claude Desktop, etc.) 12 tools for issuing, verifying, and transferring Right Tokens.
+## MCP servers (for AI agents)
+
+[`mcp/`](./mcp) — `@i-s3/rightos-mcp`: rights tools (issue / verify / transfer).
+
+[`rightflow-mcp/`](./rightflow-mcp) — `@i-s3/rightflow-mcp`: coordination tools (tasks / actors / proposals / transitions). Separate from RightOS MCP.
 
 ```json
 {
@@ -27,6 +38,11 @@ Both SDKs are **zero-dependency single files** — install via a package manager
     "rightos": {
       "command": "npx",
       "args": ["-y", "@i-s3/rightos-mcp"],
+      "env": { "RIGHTOS_API_KEY": "rk_live_..." }
+    },
+    "rightflow": {
+      "command": "npx",
+      "args": ["-y", "@i-s3/rightflow-mcp"],
       "env": { "RIGHTOS_API_KEY": "rk_live_..." }
     }
   }
@@ -60,8 +76,10 @@ outcome = RightOS().verify_token(issued["token"]["id"], issued["verificationCode
 
 ## Resources
 
-- [Developer documentation](https://rightos.i-s3.com/software/rightos/docs)
-- [OpenAPI 3.1 specification](https://rightos.i-s3.com/openapi.json)
+- [RightOS docs](https://rightos.i-s3.com/software/rightos/docs)
+- [RightFlow docs](https://rightos.i-s3.com/software/rightflow/docs)
+- [OpenAPI 3.1 (RightOS)](https://rightos.i-s3.com/openapi.json)
+- [OpenAPI (RightFlow)](https://rightos.i-s3.com/rightflow-openapi.json)
 - [Full documentation for AI agents (llms-full.txt)](https://rightos.i-s3.com/llms-full.txt)
 - [Pricing](https://rightos.i-s3.com/software/rightos/pricing) — globally uniform, free tier available, no credit card required
 - Try the live demo without registration: shared demo key `rk_demo_00000000000000000000`

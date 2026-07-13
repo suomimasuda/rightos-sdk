@@ -1,0 +1,44 @@
+{
+  "name": "@i-s3/rightflow",
+  "version": "0.1.0",
+  "description": "Thin TypeScript client for RightFlow — neutral task coordination beside RightOS. No money, dispatch, or robot control.",
+  "keywords": [
+    "rightflow",
+    "rightos",
+    "coordination",
+    "task",
+    "mcp",
+    "i-s3"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "author": "I-S3 Software Division",
+  "homepage": "https://rightos.i-s3.com/software/rightflow",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suomimasuda/rightos-sdk.git",
+    "directory": "rightflow"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

@@ -27,12 +27,20 @@ jobs:
           set -eu
           TS=$(npm view @i-s3/rightos version)
           MCP=$(npm view @i-s3/rightos-mcp version)
+          RF=$(npm view @i-s3/rightflow version)
+          RFMCP=$(npm view @i-s3/rightflow-mcp version)
           PKG=$(node -p "require('./typescript/package.json').version")
           MCP_PKG=$(node -p "require('./mcp/package.json').version")
+          RF_PKG=$(node -p "require('./rightflow/package.json').version")
+          RFMCP_PKG=$(node -p "require('./rightflow-mcp/package.json').version")
           echo "npm @i-s3/rightos=$TS (repo typescript=$PKG)"
           echo "npm @i-s3/rightos-mcp=$MCP (repo mcp=$MCP_PKG)"
+          echo "npm @i-s3/rightflow=$RF (repo rightflow=$RF_PKG)"
+          echo "npm @i-s3/rightflow-mcp=$RFMCP (repo rightflow-mcp=$RFMCP_PKG)"
           test "$TS" = "$PKG" || { echo "::error::npm @i-s3/rightos ($TS) lags repo ($PKG) — run sdk-publish"; exit 1; }
           test "$MCP" = "$MCP_PKG" || { echo "::error::npm @i-s3/rightos-mcp ($MCP) lags repo ($MCP_PKG) — run mcp-registry-publish"; exit 1; }
+          test "$RF" = "$RF_PKG" || { echo "::error::npm @i-s3/rightflow ($RF) lags repo ($RF_PKG) — run rightflow-publish"; exit 1; }
+          test "$RFMCP" = "$RFMCP_PKG" || { echo "::error::npm @i-s3/rightflow-mcp ($RFMCP) lags repo ($RFMCP_PKG) — run rightflow-mcp-publish"; exit 1; }
 
       - name: MCP Registry listing
         working-directory: mcp

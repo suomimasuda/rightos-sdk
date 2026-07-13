@@ -1,0 +1,54 @@
+{
+  "name": "@i-s3/rightflow-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for RightFlow — task coordination for AI agents. Separate from @i-s3/rightos-mcp. No money, dispatch, or robot control.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "rightflow",
+    "rightos",
+    "coordination",
+    "ai-agent",
+    "cursor",
+    "i-s3"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "author": "I-S3 Software Division",
+  "homepage": "https://rightos.i-s3.com/software/rightflow/docs/mcp",
+  "mcpName": "io.github.suomimasuda/rightflow-mcp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suomimasuda/rightos-sdk.git",
+    "directory": "rightflow-mcp"
+  },
+  "type": "module",
+  "bin": {
+    "rightflow-mcp": "dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node -e \"require('fs').chmodSync('dist/index.js', 0o755)\"",
+    "start": "node dist/index.js",
+    "test:stdio": "node test-stdio.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@i-s3/rightflow": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

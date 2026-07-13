@@ -1,8 +1,7 @@
-# Publish @i-s3/rightflow-mcp to npm via Trusted Publishing (OIDC).
-# npmjs.com → @i-s3/rightflow-mcp → Trusted Publisher
-#   Repository: suomimasuda/rightos-sdk
-#   Workflow: rightflow-mcp-publish.yml
-#   Allow: npm publish
+# Publish @i-s3/rightflow-mcp via npm Trusted Publishing (OIDC).
+# Requires: npm CLI >= 11.5.1; Trusted Publisher on package with Allow npm publish.
+# npm: @i-s3/rightflow-mcp → Trusted Publisher
+#   suomimasuda / rightos-sdk / rightflow-mcp-publish.yml / env blank
 name: rightflow-mcp-publish
 
 on:
@@ -27,8 +26,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          # registry-url required for OIDC exchange; dummy NODE_AUTH_TOKEN must be cleared before publish
-          registry-url: https://registry.npmjs.org
+          # Do NOT set registry-url: it writes _authToken=${NODE_AUTH_TOKEN} and
+          # blocks OIDC (ENEEDAUTH / misleading E404). See npm/documentation#1960
+
+      - name: Use npm with Trusted Publishing support
+        run: |
+          set -eu
+          npm install -g npm@11.6.2
+          npm --version
 
       - name: Validate tag matches package.json
         if: startsWith(github.ref, 'refs/tags/rightflow-mcp-v')
@@ -48,16 +53,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/rightflow-mcp-v')
         run: |
           set -eu
-          # setup-node injects placeholder token + always-auth; that breaks OIDC publish (often as E404).
           unset NODE_AUTH_TOKEN || true
-          if [ -n "${NPM_CONFIG_USERCONFIG:-}" ] && [ -f "$NPM_CONFIG_USERCONFIG" ]; then
-            rm -f "$NPM_CONFIG_USERCONFIG"
-          fi
-          unset NPM_CONFIG_USERCONFIG || true
-          # Fresh npmrc without _authToken — rely on OIDC
-          printf '%s\n' 'registry=https://registry.npmjs.org/' > .npmrc
           npm publish --access public --provenance
-          rm -f .npmrc
 
       - name: Pack dry-run only (workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'

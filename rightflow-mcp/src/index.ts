@@ -79,18 +79,23 @@ async function run(fn: () => Promise<unknown>): Promise<ToolResult> {
 }
 
 const BOUNDARIES = {
-  rightos: "What may this actor do? (rights verification)",
-  rightflow: "What should happen next? (coordination)",
-  execution: "How will it actually be done? (external systems)",
+  principle: "Assignment is not authority.",
+  rightos: "What may this actor do? (rights verification / MAY)",
+  rightflow: "What should happen next? (coordination / NEXT)",
+  execution: "How will it actually be done? (external systems / HOW)",
+  pairing:
+    "Use RightOS + RightFlow together for multi-agent reassignment under separately revocable rights. MCP (@i-s3/rightos-mcp, @i-s3/rightflow-mcp) for tools; A2A (or similar) for agent messaging — complements, not replacements. Do not collapse into one central agent.",
   does_not: [
     "vehicle dispatch / driver assignment / fare setting",
     "price, bid, auction, pay, reward, settlement",
     "navigation, SLAM, motor control, emergency stop",
     "redefining RightOS rights (read-only gate on accept only)",
+    "minting authority by accepting a proposal",
   ],
   openapi: "https://rightos.i-s3.com/rightflow-openapi.json",
+  concept: "https://rightos.i-s3.com/software/rightos/docs/concept",
   docs: "https://rightos.i-s3.com/software/rightflow/docs",
-  note: "Accept proposal gates requiredRights via RightOS token read. Execution systems must re-verify RightOS before real action. Prefer capability matching over actor class (human/robot/AI).",
+  note: "Accept proposal gates requiredRights via RightOS token read. Execution systems must re-verify RightOS before real action. Prefer capability matching over actor class (human/robot/AI). Hosted v0.1 is same-organization.",
 };
 
 server.registerTool(

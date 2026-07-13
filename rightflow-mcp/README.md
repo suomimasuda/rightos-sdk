@@ -1,5 +1,7 @@
 # @i-s3/rightflow-mcp — RightFlow MCP Server
 
+**Assignment is not authority.** RightOS answers **MAY**: what an actor may do. RightFlow answers **NEXT**: what should happen next. This MCP server exposes coordination tools without turning assignments into rights, payments, dispatch, or execution control.
+
 MCP server for **RightFlow** (coordination), separate from [`@i-s3/rightos-mcp`](https://www.npmjs.com/package/@i-s3/rightos-mcp) (rights).
 
 <!-- mcp-name: io.github.suomimasuda/rightflow-mcp -->

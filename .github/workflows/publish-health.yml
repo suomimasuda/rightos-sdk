@@ -25,6 +25,23 @@ jobs:
       - name: npm registry — package versions
         run: |
           set -eu
+          assert_match() {
+            local name="$1" npm_v="$2" repo_v="$3" publish_hint="$4" sync_hint="$5"
+            echo "npm $name=$npm_v (repo=$repo_v)"
+            if [ "$npm_v" = "$repo_v" ]; then
+              return 0
+            fi
+            # sort -V: which version is newer?
+            local newer
+            newer=$(printf '%s\n%s\n' "$npm_v" "$repo_v" | sort -V | tail -1)
+            if [ "$newer" = "$npm_v" ]; then
+              echo "::error::$name: repo ($repo_v) lags npm ($npm_v). $sync_hint"
+            else
+              echo "::error::$name: npm ($npm_v) lags repo ($repo_v). $publish_hint"
+            fi
+            exit 1
+          }
+
           TS=$(npm view @i-s3/rightos version)
           MCP=$(npm view @i-s3/rightos-mcp version)
           RF=$(npm view @i-s3/rightflow version)
@@ -33,14 +50,19 @@ jobs:
           MCP_PKG=$(node -p "require('./mcp/package.json').version")
           RF_PKG=$(node -p "require('./rightflow/package.json').version")
           RFMCP_PKG=$(node -p "require('./rightflow-mcp/package.json').version")
-          echo "npm @i-s3/rightos=$TS (repo typescript=$PKG)"
-          echo "npm @i-s3/rightos-mcp=$MCP (repo mcp=$MCP_PKG)"
-          echo "npm @i-s3/rightflow=$RF (repo rightflow=$RF_PKG)"
-          echo "npm @i-s3/rightflow-mcp=$RFMCP (repo rightflow-mcp=$RFMCP_PKG)"
-          test "$TS" = "$PKG" || { echo "::error::version mismatch @i-s3/rightos: npm=$TS repo=$PKG — publish or sync repo"; exit 1; }
-          test "$MCP" = "$MCP_PKG" || { echo "::error::version mismatch @i-s3/rightos-mcp: npm=$MCP repo=$MCP_PKG — publish or sync repo"; exit 1; }
-          test "$RF" = "$RF_PKG" || { echo "::error::version mismatch @i-s3/rightflow: npm=$RF repo=$RF_PKG — publish or sync repo"; exit 1; }
-          test "$RFMCP" = "$RFMCP_PKG" || { echo "::error::version mismatch @i-s3/rightflow-mcp: npm=$RFMCP repo=$RFMCP_PKG — publish or sync repo"; exit 1; }
+
+          assert_match "@i-s3/rightos" "$TS" "$PKG" \
+            "Run sdk-publish (or tag rightos-v*)" \
+            "Sync monorepo → rightos-sdk and push (./scripts/sync-rightos-sdk.sh --push typescript)"
+          assert_match "@i-s3/rightos-mcp" "$MCP" "$MCP_PKG" \
+            "Run mcp-registry-publish" \
+            "Sync monorepo → rightos-sdk and push (./scripts/sync-rightos-sdk.sh --push mcp)"
+          assert_match "@i-s3/rightflow" "$RF" "$RF_PKG" \
+            "Run rightflow-publish (or tag rightflow-v*)" \
+            "Sync monorepo → rightos-sdk and push (./scripts/sync-rightos-sdk.sh --push rightflow)"
+          assert_match "@i-s3/rightflow-mcp" "$RFMCP" "$RFMCP_PKG" \
+            "Run rightflow-mcp-publish (or tag rightflow-mcp-v*)" \
+            "Sync monorepo → rightos-sdk and push (./scripts/sync-rightos-sdk.sh --push rightflow-mcp)"
 
       - name: MCP Registry listing
         working-directory: mcp

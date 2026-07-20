@@ -37,10 +37,10 @@ jobs:
           echo "npm @i-s3/rightos-mcp=$MCP (repo mcp=$MCP_PKG)"
           echo "npm @i-s3/rightflow=$RF (repo rightflow=$RF_PKG)"
           echo "npm @i-s3/rightflow-mcp=$RFMCP (repo rightflow-mcp=$RFMCP_PKG)"
-          test "$TS" = "$PKG" || { echo "::error::npm @i-s3/rightos ($TS) lags repo ($PKG) — run sdk-publish"; exit 1; }
-          test "$MCP" = "$MCP_PKG" || { echo "::error::npm @i-s3/rightos-mcp ($MCP) lags repo ($MCP_PKG) — run mcp-registry-publish"; exit 1; }
-          test "$RF" = "$RF_PKG" || { echo "::error::npm @i-s3/rightflow ($RF) lags repo ($RF_PKG) — run rightflow-publish"; exit 1; }
-          test "$RFMCP" = "$RFMCP_PKG" || { echo "::error::npm @i-s3/rightflow-mcp ($RFMCP) lags repo ($RFMCP_PKG) — run rightflow-mcp-publish"; exit 1; }
+          test "$TS" = "$PKG" || { echo "::error::version mismatch @i-s3/rightos: npm=$TS repo=$PKG — publish or sync repo"; exit 1; }
+          test "$MCP" = "$MCP_PKG" || { echo "::error::version mismatch @i-s3/rightos-mcp: npm=$MCP repo=$MCP_PKG — publish or sync repo"; exit 1; }
+          test "$RF" = "$RF_PKG" || { echo "::error::version mismatch @i-s3/rightflow: npm=$RF repo=$RF_PKG — publish or sync repo"; exit 1; }
+          test "$RFMCP" = "$RFMCP_PKG" || { echo "::error::version mismatch @i-s3/rightflow-mcp: npm=$RFMCP repo=$RFMCP_PKG — publish or sync repo"; exit 1; }
 
       - name: MCP Registry listing
         working-directory: mcp

@@ -45,11 +45,15 @@ export type FlowTransitionAction =
   | "fail"
   | "cancel";
 
+export type ActorAvailability = "available" | "waiting" | "unavailable";
+
 export interface FlowActor {
   id: string;
   organizationId: string;
   capabilities: string[];
   active: boolean;
+  /** Coarse coordination fact — not high-frequency telemetry. */
+  availability?: ActorAvailability;
   createdAt: string;
   updatedAt: string;
 }
@@ -153,11 +157,16 @@ export class RightFlow {
   upsertActor(
     actorId: string,
     capabilities: string[],
-    active?: boolean
+    activeOrOpts?: boolean | { active?: boolean; availability?: ActorAvailability }
   ): Promise<{ actor: FlowActor }> {
+    const opts =
+      typeof activeOrOpts === "boolean"
+        ? { active: activeOrOpts }
+        : activeOrOpts ?? {};
     return this.request("PUT", `/api/rightflow/actors/${encodeURIComponent(actorId)}`, {
       capabilities,
-      active,
+      active: opts.active,
+      availability: opts.availability,
     });
   }
 
@@ -216,6 +225,39 @@ export class RightFlow {
       "POST",
       `/api/rightflow/tasks/${encodeURIComponent(taskId)}/transitions`,
       { action, progressPercent }
+    );
+  }
+
+  /**
+   * Reference who-next ranking. Soft signals are request-scoped; never auto-creates proposals.
+   */
+  suggestCandidates(
+    taskId: string,
+    input?: {
+      actorIds?: string[];
+      softSignals?: Record<string, { nearZone?: string; busy?: boolean }>;
+      engineId?: string;
+    }
+  ): Promise<{
+    taskId: string;
+    engineId: string;
+    engineNote: string;
+    candidates: Array<{
+      actorId: string;
+      eligible: boolean;
+      score: number;
+      reasons: string[];
+      draftProposal?: {
+        kind: "assignment";
+        taskId: string;
+        toActorId: string;
+      };
+    }>;
+  }> {
+    return this.request(
+      "POST",
+      `/api/rightflow/tasks/${encodeURIComponent(taskId)}/suggest-candidates`,
+      input ?? {}
     );
   }
 

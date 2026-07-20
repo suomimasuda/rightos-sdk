@@ -56,16 +56,21 @@ Local (from this repo, after `npm install && npm run build` in `sdk/rightflow` a
 | --- | --- | --- |
 | `explain_rightflow` | no | Boundaries and non-goals |
 | `upsert_actor` | yes | Upsert capabilities |
-| `list_actors` / `get_actor` | yes | Actors |
-| `create_task` / `list_tasks` / `get_task` | yes | FlowTasks |
-| `apply_transition` | yes | start / progress / complete / fail / cancel |
+| `list_actors` / `get_actor` | yes | Actors — **list is integrator/admin**; prefer `get_actor` |
+| `create_task` / `list_tasks` / `get_task` | yes | FlowTasks — **list is integrator/admin**; prefer `get_task` or `actorId` |
+| `apply_transition` | yes | start / progress / complete / fail / cancel — **coarse progress only** |
 | `create_proposal` / `list_proposals` | yes | assignment / reassignment / swap |
 | `accept_proposal` / `reject_proposal` | yes | Resolve proposals |
+
+**Visibility ≠ necessity:** Organization-wide `list_*` is retained for integrators/admins. Autonomous agent paths should prefer direct get and scoped filters — do not make org-wide discovery the default decision input.
+
+**Coordination tempo:** Prefer infrequent `progress` milestones. Keep high-frequency telemetry in the execution system.
 
 ## Example prompts
 
 - "Explain RightFlow boundaries, then create a task requiring carry.light and assign it to actor_a."
-- "Propose a swap between two assigned tasks — do not invent a bid tool."
+- "Propose a swap between two assigned tasks (there is no bid tool)."
+- "Get task task_… by id (do not list the whole organization unless you are integrating)."
 
 ## Resources
 

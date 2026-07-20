@@ -1,6 +1,6 @@
 {
   "name": "@i-s3/rightflow",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Thin TypeScript client for RightFlow — neutral task coordination beside RightOS. No money, dispatch, or robot control.",
   "keywords": [
     "rightflow",

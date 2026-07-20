@@ -85,6 +85,10 @@ const BOUNDARIES = {
   execution: "How will it actually be done? (external systems / HOW)",
   pairing:
     "Use RightOS + RightFlow together for multi-agent reassignment under separately revocable rights. MCP (@i-s3/rightos-mcp, @i-s3/rightflow-mcp) for tools; A2A (or similar) for agent messaging — complements, not replacements. Do not collapse into one central agent.",
+  visibility:
+    "Visibility ≠ necessity. Organization-wide list_* tools are integrator/admin capabilities. Prefer get_* and scoped filters (actorId) for autonomous actor paths. Do not treat org-wide discovery as the default decision input.",
+  tempo:
+    "Coordination tempo: shared RightFlow state should change relatively slowly. Prefer coarse, infrequent progress; keep high-frequency telemetry local to the execution system.",
   does_not: [
     "vehicle dispatch / driver assignment / fare setting",
     "price, bid, auction, pay, reward, settlement",
@@ -102,7 +106,7 @@ server.registerTool(
   "explain_rightflow",
   {
     description:
-      "Explain RightFlow boundaries in 30 seconds. No API key required. Use before coordinating tasks so you do not confuse rights, coordination, and execution — and do not invent bid/pay/dispatch tools.",
+      "Explain RightFlow in 30 seconds: rights vs coordination vs execution. No bid, pay, or dispatch tools. No API key required.",
     inputSchema: {},
   },
   () => ok(BOUNDARIES)
@@ -112,23 +116,29 @@ server.registerTool(
   "upsert_actor",
   {
     description:
-      "Upsert an actor's capabilities (capability strings only — no human/robot class). Requires RIGHTOS_API_KEY.",
+      "Upsert an actor's capabilities (capability strings only — no human/robot class). Optional availability is a coarse coordination fact (waiting = volunteering for work), not high-frequency telemetry. Requires RIGHTOS_API_KEY.",
     inputSchema: {
       actorId: z.string().describe("Stable actor id (e.g. actor_a)"),
       capabilities: z
         .array(z.string())
         .describe("Capability tokens, e.g. carry.light"),
       active: z.boolean().optional().describe("Default true"),
+      availability: z
+        .enum(["available", "waiting", "unavailable"])
+        .optional()
+        .describe("Coarse availability; waiting = volunteering for work"),
     },
   },
-  ({ actorId, capabilities, active }) =>
-    run(() => client().upsertActor(actorId, capabilities, active))
+  ({ actorId, capabilities, active, availability }) =>
+    run(() =>
+      client().upsertActor(actorId, capabilities, { active, availability })
+    )
 );
 
 server.registerTool(
   "list_actors",
   {
-    description: "List actors for the authenticated organization.",
+    description: "List actors for the authenticated organization (integrator/admin). Prefer get_actor for normal lookups.",
     inputSchema: {},
   },
   () => run(() => client().listActors())
@@ -169,7 +179,8 @@ server.registerTool(
 server.registerTool(
   "list_tasks",
   {
-    description: "List FlowTasks (optional state / actorId filter).",
+    description:
+      "List FlowTasks (optional state / actorId filter). Integrator/admin capability — prefer get_task or actorId filter for autonomous paths; do not treat org-wide list as the default.",
     inputSchema: {
       state: z.string().optional(),
       actorId: z.string().optional(),
@@ -191,7 +202,7 @@ server.registerTool(
   "apply_transition",
   {
     description:
-      "Apply execution-state transition: start | progress | complete | fail | cancel. start requires dependency tasks to be completed.",
+      "Apply execution-state transition: start | progress | complete | fail | cancel. start requires dependency tasks to be completed. Prefer coarse, infrequent progressPercent — not continuous telemetry.",
     inputSchema: {
       taskId: z.string(),
       action: z.enum(["start", "progress", "complete", "fail", "cancel"]),
@@ -200,6 +211,38 @@ server.registerTool(
   },
   ({ taskId, action, progressPercent }) =>
     run(() => client().transition(taskId, action, progressPercent))
+);
+
+server.registerTool(
+  "suggest_candidates",
+  {
+    description:
+      "Reference who-next ranking for a task (heuristic.v0). Multi-signal: availability + request-scoped softSignals (nearZone, busy) — soft signals are never persisted. Never creates or accepts proposals; use create_proposal + accept_proposal afterwards. Not the sole optimizer — you may rank externally and only create proposals. Prefer scoped actorIds.",
+    inputSchema: {
+      taskId: z.string(),
+      actorIds: z
+        .array(z.string())
+        .optional()
+        .describe("Prefer scoped candidate ids; omit only for integrator/admin org-wide rank"),
+      softSignals: z
+        .record(
+          z.object({
+            nearZone: z.string().optional(),
+            busy: z.boolean().optional(),
+          })
+        )
+        .optional()
+        .describe("Per-actor request-scoped signals; not continuous telemetry"),
+      engineId: z
+        .string()
+        .optional()
+        .describe("Optional label; default heuristic.v0"),
+    },
+  },
+  ({ taskId, actorIds, softSignals, engineId }) =>
+    run(() =>
+      client().suggestCandidates(taskId, { actorIds, softSignals, engineId })
+    )
 );
 
 server.registerTool(

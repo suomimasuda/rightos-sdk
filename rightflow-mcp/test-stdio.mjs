@@ -58,6 +58,7 @@ const EXPECTED = [
   "list_proposals",
   "list_tasks",
   "reject_proposal",
+  "suggest_candidates",
   "upsert_actor",
 ].sort();
 

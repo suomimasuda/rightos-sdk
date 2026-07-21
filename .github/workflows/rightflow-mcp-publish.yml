@@ -1,10 +1,7 @@
-# Publish @i-s3/rightflow-mcp via npm Trusted Publishing (OIDC).
-# Trusted Publisher must match EXACTLY:
-#   Organization/user: suomimasuda
-#   Repository: rightos-sdk
-#   Workflow filename: rightflow-mcp-publish.yml
-#   Environment: (blank)
-#   Allow: npm publish
+# Publish @i-s3/rightflow-mcp to npm via Trusted Publishing (OIDC only).
+# Do NOT create npm granular access tokens for CI — they expire ≤90 days.
+# Setup: npm Packages → @i-s3/rightflow-mcp → Settings → Trusted publishing
+#   owner=suomimasuda repo=rightos-sdk workflow=rightflow-mcp-publish.yml
 name: rightflow-mcp-publish
 
 on:
@@ -34,14 +31,6 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      - name: Use npm with Trusted Publishing support
-        run: |
-          set -eu
-          npm install -g npm@11.6.2
-          npm --version
-          # Prove OIDC env is present (no token values)
-          test -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" && echo "ACTIONS_ID_TOKEN_REQUEST_URL=set" || echo "ACTIONS_ID_TOKEN_REQUEST_URL=MISSING"
-
       - name: Validate tag matches package.json
         if: startsWith(github.ref, 'refs/tags/rightflow-mcp-v')
         run: |
@@ -56,22 +45,10 @@ jobs:
           npm ci
           npm run build
 
-      - name: Publish to npm (Trusted Publishing / OIDC)
-        if: startsWith(github.ref, 'refs/tags/rightflow-mcp-v')
-        run: |
-          set -eu
-          # setup-node writes _authToken=${NODE_AUTH_TOKEN}; empty token blocks OIDC.
-          # Keep registry config, strip only the auth token line (npm/documentation#1960).
-          if [ -n "${NPM_CONFIG_USERCONFIG:-}" ] && [ -f "$NPM_CONFIG_USERCONFIG" ]; then
-            sed -i '/_authToken/d' "$NPM_CONFIG_USERCONFIG"
-            sed -i '/always-auth/d' "$NPM_CONFIG_USERCONFIG"
-            echo "npmrc after strip:"
-            cat "$NPM_CONFIG_USERCONFIG"
-          fi
-          unset NODE_AUTH_TOKEN || true
-          npm publish --access public --provenance
-
-      - name: Pack dry-run only (workflow_dispatch)
+      - name: OIDC dry-run (workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'
-        run: |
-          npm publish --dry-run --access public
+        run: bash ../scripts/oidc-npm-publish.sh dry-run
+
+      - name: Publish to npm (tag)
+        if: startsWith(github.ref, 'refs/tags/rightflow-mcp-v')
+        run: bash ../scripts/oidc-npm-publish.sh publish

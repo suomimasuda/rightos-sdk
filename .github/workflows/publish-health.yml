@@ -15,12 +15,24 @@ permissions:
 jobs:
   health:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Refuse long-lived NPM_TOKEN
+        run: |
+          if [ -n "${NPM_TOKEN:-}" ]; then
+            echo "::error::NPM_TOKEN secret is set. Delete it — CI must use Trusted Publishing (OIDC) only. Granular tokens expire ≤90 days and must not be renewed for CI."
+            exit 1
+          fi
+          echo "✓ NPM_TOKEN unset (OIDC-only policy)"
 
       - name: npm registry — package versions
         run: |
@@ -52,7 +64,7 @@ jobs:
           RFMCP_PKG=$(node -p "require('./rightflow-mcp/package.json').version")
 
           assert_match "@i-s3/rightos" "$TS" "$PKG" \
-            "Run sdk-publish (or tag rightos-v*)" \
+            "Run sdk-publish (or tag sdk-v*)" \
             "Sync monorepo → rightos-sdk and push (./scripts/sync-rightos-sdk.sh --push typescript)"
           assert_match "@i-s3/rightos-mcp" "$MCP" "$MCP_PKG" \
             "Run mcp-registry-publish" \
@@ -63,6 +75,25 @@ jobs:
           assert_match "@i-s3/rightflow-mcp" "$RFMCP" "$RFMCP_PKG" \
             "Run rightflow-mcp-publish (or tag rightflow-mcp-v*)" \
             "Sync monorepo → rightos-sdk and push (./scripts/sync-rightos-sdk.sh --push rightflow-mcp)"
+
+      - name: OIDC Trusted Publishing probe (all npm packages)
+        run: |
+          set -eu
+          probe() {
+            local dir="$1"
+            echo "=== OIDC probe $dir ==="
+            (
+              cd "$dir"
+              if [ -f package-lock.json ]; then npm ci; else npm install; fi
+              npm run build
+              bash ../scripts/oidc-npm-publish.sh dry-run
+            )
+          }
+          probe typescript
+          probe mcp
+          probe rightflow
+          probe rightflow-mcp
+          echo "✓ All OIDC Trusted Publisher probes passed"
 
       - name: MCP Registry listing
         working-directory: mcp

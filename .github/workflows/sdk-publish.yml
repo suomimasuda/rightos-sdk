@@ -1,7 +1,7 @@
-# Publish @i-s3/rightos (TypeScript SDK) to npm.
-# Auth: npm Trusted Publishing (OIDC) — no long-lived NPM_TOKEN required.
-# One-time setup: npm Packages → @i-s3/rightos → Settings → Trusted publishing
-#   suomimasuda/rightos-sdk + workflow sdk-publish.yml
+# Publish @i-s3/rightos (TypeScript SDK) to npm via Trusted Publishing (OIDC only).
+# Do NOT create npm granular access tokens for CI — they expire ≤90 days.
+# Setup: npm Packages → @i-s3/rightos → Settings → Trusted publishing
+#   owner=suomimasuda repo=rightos-sdk workflow=sdk-publish.yml
 name: sdk-publish
 
 on:
@@ -17,6 +17,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     defaults:
       run:
         working-directory: typescript
@@ -26,6 +29,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          registry-url: https://registry.npmjs.org
 
       - name: Validate tag matches package.json
         if: startsWith(github.ref, 'refs/tags/sdk-v')
@@ -41,26 +45,10 @@ jobs:
           npm install
           npm run build
 
-      - name: Publish to npm (Trusted Publishing / OIDC)
-        run: |
-          unset NODE_AUTH_TOKEN || true
-          npm config set registry https://registry.npmjs.org/
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            set +e
-            out=$(npm publish --dry-run --access public 2>&1)
-            code=$?
-            set -e
-            echo "$out"
-            if [ "$code" -eq 0 ]; then
-              echo "OIDC dry-run OK — Trusted Publisher is configured"
-            elif echo "$out" | grep -q "cannot publish over the previously published versions"; then
-              echo "OIDC OK — auth verified (version already on npm registry)"
-            elif echo "$out" | grep -qiE 'ENEEDAUTH|401 Unauthorized|403 Forbidden|404 Not Found - PUT'; then
-              echo "::error::OIDC/auth failed — check Trusted Publisher settings"
-              exit 1
-            else
-              exit "$code"
-            fi
-          else
-            npm publish --access public
-          fi
+      - name: OIDC dry-run (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: bash ../scripts/oidc-npm-publish.sh dry-run
+
+      - name: Publish to npm (tag)
+        if: startsWith(github.ref, 'refs/tags/sdk-v')
+        run: bash ../scripts/oidc-npm-publish.sh publish

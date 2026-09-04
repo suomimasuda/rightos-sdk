@@ -30,7 +30,7 @@ __all__ = [
     "DEFAULT_BASE_URL",
     "verify_webhook_signature",
 ]
-__version__ = "0.4.4"
+__version__ = "0.5.0"
 
 DEFAULT_BASE_URL = "https://rightos.i-s3.com"
 
@@ -252,8 +252,10 @@ class RightOS:
 
         Returns ``{"webhook": {...}, "secret": "whsec_...", ...}``.
         The ``secret`` is shown EXACTLY ONCE — store it securely and use it
-        with :func:`verify_webhook_signature`. ``events`` defaults to all four
-        (token.verified / token.used / token.cancelled / token.transferred).
+        with :func:`verify_webhook_signature`. ``events`` defaults to all five
+        (token.verified / token.used / token.cancelled / token.transferred /
+        queue.approaching — the latter fires only when the location policy
+        sets ``approachingThreshold``).
         """
         body: dict = {"url": url}
         if events is not None:

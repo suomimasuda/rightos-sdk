@@ -43,6 +43,12 @@ jobs:
           test "$EXPECTED" = "$PKG_VER" || { echo "package.json version mismatch"; exit 1; }
           test "$EXPECTED" = "$SERVER_VER" || { echo "server.json version mismatch"; exit 1; }
 
+      - name: Build sibling TypeScript SDK (file:../typescript)
+        working-directory: typescript
+        run: |
+          npm install
+          npm run build
+
       - name: Build MCP server
         run: |
           npm ci

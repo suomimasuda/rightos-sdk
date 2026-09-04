@@ -79,6 +79,18 @@ export interface RightPolicy {
   verificationRequirement: "none" | "external_id";
   /** Whether the current holder can self-cancel the token (Policy Phase 2). */
   holderCancellable: boolean;
+  /** Max concurrent active queue tokens; null = unlimited (ADR-0024). */
+  maxActiveTokens: number | null;
+  /** When true, verify before startTime returns not_yet_valid (ADR-0024). */
+  enforceTimeWindow: boolean;
+  /** When true, use from issued returns verify_required (ADR-0024). */
+  requireVerifyBeforeUse: boolean;
+  /**
+   * queue.approaching webhook threshold (ADR-0029). When a token's aheadCount
+   * drops below this value after a slot frees up, the organization's webhooks
+   * receive queue.approaching (once per token). null = disabled (default).
+   */
+  approachingThreshold: number | null;
 }
 
 /** Policy change audit record (append-only; contains no personal data). */
@@ -109,6 +121,8 @@ export interface RightToken {
   startTime: string;
   endTime: string;
   priorityNumber: number;
+  /** Live queue position at issuance (ADR-0024). */
+  queuePosition?: number;
   status: RightTokenStatus;
   transferCount: number;
   createdAt: string;
@@ -122,7 +136,27 @@ export type VerificationResult =
   | "failed"
   | "expired"
   | "cancelled"
-  | "already_used";
+  | "already_used"
+  | "not_yet_valid";
+
+export interface LocationQueueSnapshot {
+  locationId: string;
+  locationActive: boolean;
+  activeCount: number;
+  waitingCount: number;
+  verifiedCount: number;
+  issueSequenceToday: number;
+  headQueuePosition: number | null;
+  estimatedWaitMinutes: number | null;
+  aheadCount?: number;
+  queuePosition?: number;
+}
+
+export interface ListTokensFilter {
+  locationId?: string;
+  status?: RightTokenStatus;
+  since?: string;
+}
 
 export interface IssuedToken {
   token: RightToken;
@@ -160,7 +194,8 @@ export type WebhookEventType =
   | "token.verified"
   | "token.used"
   | "token.cancelled"
-  | "token.transferred";
+  | "token.transferred"
+  | "queue.approaching";
 
 /**
  * Outbound webhook registration. The signing secret (whsec_...) is returned
@@ -204,7 +239,11 @@ export interface WebhookEvent {
   id: string;
   type: WebhookEventType;
   createdAt: string;
-  data: { token: RightToken };
+  /** `queue` is present only on queue.approaching (counts only, no PII). */
+  data: {
+    token: RightToken;
+    queue?: { aheadCount: number; queuePosition: number };
+  };
 }
 
 /** Error thrown for any non-2xx API response. */
@@ -362,6 +401,24 @@ export class RightOS {
   }
 
   /**
+   * Public queue snapshot for a location (no PII). Optional tokenId adds
+   * aheadCount and queuePosition. Does not auto-call or assign staff (ADR-0024).
+   */
+  async getLocationQueue(
+    locationId: string,
+    tokenId?: string
+  ): Promise<LocationQueueSnapshot> {
+    const q = tokenId
+      ? `?tokenId=${encodeURIComponent(tokenId)}`
+      : "";
+    return request(
+      this.opts,
+      "GET",
+      `/api/rightos/locations/${encodeURIComponent(locationId)}/queue${q}`
+    );
+  }
+
+  /**
    * List all industry presets and country overlays (public).
    * Useful for choosing a location type or proposing policy overrides.
    * Defaults, not legal advice.
@@ -444,6 +501,7 @@ export class RightOS {
    * Issue a Right Token. The verificationCode and walletUrl are returned
    * exactly once — hand the walletUrl (QR page) to the end user.
    * Throws 402 when the plan's monthly token limit is exceeded.
+   * Throws 409 queue_full when maxActiveTokens policy limit is reached.
    */
   async issueToken(input: {
     locationId: string;
@@ -455,7 +513,24 @@ export class RightOS {
     return request(this.opts, "POST", "/api/rightos/tokens/issue", input);
   }
 
-  /** Mark a token as used (own organization only). */
+  /**
+   * List your organization's tokens (filter by locationId, status, since).
+   */
+  async listTokens(filter?: ListTokensFilter): Promise<RightToken[]> {
+    const params = new URLSearchParams();
+    if (filter?.locationId) params.set("locationId", filter.locationId);
+    if (filter?.status) params.set("status", filter.status);
+    if (filter?.since) params.set("since", filter.since);
+    const q = params.toString() ? `?${params}` : "";
+    const data = await request<{ tokens: RightToken[] }>(
+      this.opts,
+      "GET",
+      `/api/rightos/tokens${q}`
+    );
+    return data.tokens;
+  }
+
+  /** Mark a token as used (own organization only). Throws 409 verify_required when policy requires prior verify. */
   async useToken(tokenId: string): Promise<RightToken> {
     const data = await request<{ token: RightToken }>(
       this.opts,
@@ -489,7 +564,9 @@ export class RightOS {
    * Register a webhook (up to 3 per organization; https only).
    * The returned `secret` (whsec_...) is shown EXACTLY ONCE — store it
    * securely and use it with `RightOS.verifyWebhookSignature`.
-   * Events default to all four (token.verified/used/cancelled/transferred).
+   * Events default to all five (token.verified/used/cancelled/transferred
+   * and queue.approaching — the latter fires only when the location policy
+   * sets approachingThreshold).
    */
   async createWebhook(input: {
     url: string;

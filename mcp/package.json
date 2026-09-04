@@ -1,7 +1,7 @@
 {
   "name": "@i-s3/rightos-mcp",
-  "version": "0.4.4",
-  "description": "MCP server for RightOS — queue/EV/pickup QR tickets for AI agents (Cursor, Claude). 18 tools, privacy-first, no end-user PII. npm: npx -y @i-s3/rightos-mcp",
+  "version": "0.5.0",
+  "description": "MCP server for RightOS — queue/EV/pickup QR tickets for AI agents (Cursor, Claude). 20 tools, privacy-first, no end-user PII. npm: npx -y @i-s3/rightos-mcp",
   "mcpName": "io.github.suomimasuda/rightos-mcp",
   "keywords": [
     "mcp",
@@ -44,7 +44,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@i-s3/rightos": "^0.4.1",
+    "@i-s3/rightos": "file:../typescript",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.25.0"
   },

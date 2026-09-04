@@ -1,6 +1,6 @@
 {
   "name": "@i-s3/rightos",
-  "version": "0.4.4",
+  "version": "0.5.0",
   "description": "TypeScript SDK for RightOS — privacy-first queue/EV/pickup QR API. No end-user PII. OpenAPI + MCP (@i-s3/rightos-mcp).",
   "keywords": [
     "rightos",

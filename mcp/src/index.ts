@@ -93,7 +93,7 @@ server.registerTool(
   "verify_token",
   {
     description:
-      "Verify a Right Token with its verification code. Result is success / failed / expired / cancelled / already_used. Rate limited (10/min per token).",
+      "Verify a Right Token with its verification code. Result is success / failed / expired / cancelled / already_used / not_yet_valid (when enforceTimeWindow blocks verify before startTime). Rate limited (10/min per token).",
     inputSchema: {
       tokenId: z.string().describe("Token ID (tok_...)"),
       verificationCode: z.string().describe("The holder's verification code"),
@@ -155,6 +155,23 @@ server.registerTool(
   () => run(() => client.listPolicies())
 );
 
+server.registerTool(
+  "get_location_queue",
+  {
+    description:
+      "Public queue snapshot for a location (counts only, no PII). Optional tokenId adds aheadCount and queuePosition. Does not auto-call or assign staff (ADR-0024).",
+    inputSchema: {
+      locationId: z.string().describe("Location ID (loc_...)"),
+      tokenId: z
+        .string()
+        .optional()
+        .describe("Optional token ID to include aheadCount and queuePosition"),
+    },
+  },
+  ({ locationId, tokenId }) =>
+    run(() => client.getLocationQueue(locationId, tokenId))
+);
+
 // ---------- Operator tools (require RIGHTOS_API_KEY) ----------
 
 const NEEDS_KEY =
@@ -167,6 +184,28 @@ server.registerTool(
     inputSchema: {},
   },
   () => run(() => client.listLocations())
+);
+
+server.registerTool(
+  "list_tokens",
+  {
+    description:
+      "List your organization's Right Tokens. Filter by locationId, status, and since (ISO 8601)." +
+      NEEDS_KEY,
+    inputSchema: {
+      locationId: z.string().optional().describe("Filter by location ID"),
+      status: z
+        .enum(["issued", "verified", "used", "cancelled", "expired"])
+        .optional()
+        .describe("Filter by token status"),
+      since: z
+        .string()
+        .optional()
+        .describe("Only tokens created at or after this ISO 8601 time"),
+    },
+  },
+  ({ locationId, status, since }) =>
+    run(() => client.listTokens({ locationId, status, since }))
 );
 
 server.registerTool(
@@ -200,7 +239,7 @@ server.registerTool(
   "set_location_policy",
   {
     description:
-      "Override a location's policy (partial update: transferable, maxTransfers, defaultValidityMinutes, verificationRequirement). Set reset=true to restore the industry preset." +
+      "Override a location's policy (partial update: transferable, maxTransfers, defaultValidityMinutes, verificationRequirement, holderCancellable, maxActiveTokens, enforceTimeWindow, requireVerifyBeforeUse, approachingThreshold). Set reset=true to restore the industry preset." +
       NEEDS_KEY,
     inputSchema: {
       locationId: z.string().describe("Location ID (loc_...)"),
@@ -223,6 +262,32 @@ server.registerTool(
         .boolean()
         .optional()
         .describe("Whether the current holder can self-cancel the token"),
+      maxActiveTokens: z
+        .number()
+        .int()
+        .min(1)
+        .max(100000)
+        .nullable()
+        .optional()
+        .describe("Max concurrent active queue tokens; null = unlimited"),
+      enforceTimeWindow: z
+        .boolean()
+        .optional()
+        .describe("Block verify before startTime (not_yet_valid)"),
+      requireVerifyBeforeUse: z
+        .boolean()
+        .optional()
+        .describe("Require verify before mark-as-used (409 verify_required)"),
+      approachingThreshold: z
+        .number()
+        .int()
+        .min(1)
+        .max(1000)
+        .nullable()
+        .optional()
+        .describe(
+          "queue.approaching webhook threshold: notify the organization's webhooks once per token when aheadCount drops below this after a slot frees up; null = disabled"
+        ),
     },
   },
   ({ locationId, reset, ...patch }) =>
@@ -242,7 +307,7 @@ server.registerTool(
   "issue_token",
   {
     description:
-      "Issue a Right Token (digital QR ticket). The verification code and wallet URL are returned EXACTLY ONCE — hand the walletUrl to the end user. Returns 402 if the plan's monthly limit is exceeded." +
+      "Issue a Right Token (digital QR ticket). The verification code and wallet URL are returned EXACTLY ONCE — hand the walletUrl to the end user. Returns 402 if the plan's monthly limit is exceeded. Returns 409 queue_full when maxActiveTokens is reached." +
       NEEDS_KEY,
     inputSchema: {
       locationId: z.string().describe("Location ID (loc_...)"),
@@ -264,7 +329,7 @@ server.registerTool(
   "use_token",
   {
     description:
-      "Mark a Right Token as used after service (own organization only)." +
+      "Mark a Right Token as used after service (own organization only). Returns 409 verify_required when requireVerifyBeforeUse policy is enabled and the token is not yet verified." +
       NEEDS_KEY,
     inputSchema: { tokenId: z.string().describe("Token ID (tok_...)") },
   },
@@ -318,7 +383,7 @@ server.registerTool(
   "create_webhook",
   {
     description:
-      "Register an outbound webhook (up to 3 per organization, https only). Events: token.verified / token.used / token.cancelled / token.transferred (defaults to all). The response includes the signing secret (whsec_...) EXACTLY ONCE — deliveries are signed via the x-rightos-signature header (t=<unix seconds>,v1=<hex HMAC-SHA256>)." +
+      "Register an outbound webhook (up to 3 per organization, https only). Events: token.verified / token.used / token.cancelled / token.transferred / queue.approaching (defaults to all; queue.approaching fires only when the location policy sets approachingThreshold). The response includes the signing secret (whsec_...) EXACTLY ONCE — deliveries are signed via the x-rightos-signature header (t=<unix seconds>,v1=<hex HMAC-SHA256>)." +
       NEEDS_KEY,
     inputSchema: {
       url: z.string().describe("https URL to receive signed POST deliveries"),
@@ -329,10 +394,11 @@ server.registerTool(
             "token.used",
             "token.cancelled",
             "token.transferred",
+            "queue.approaching",
           ])
         )
         .optional()
-        .describe("Event types to subscribe to (defaults to all four)"),
+        .describe("Event types to subscribe to (defaults to all five)"),
     },
   },
   ({ url, events }) => run(() => client.createWebhook({ url, events }))

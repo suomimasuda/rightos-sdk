@@ -1,6 +1,6 @@
 {
   "name": "@i-s3/rightflow-mcp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MCP server for RightFlow — task coordination for AI agents. Separate from @i-s3/rightos-mcp. No money, dispatch, or robot control.",
   "keywords": [
     "mcp",
@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@i-s3/rightflow": "0.1.1",
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "zod": "^3.25.0"
   },
   "devDependencies": {

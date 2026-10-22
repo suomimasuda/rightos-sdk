@@ -65,6 +65,26 @@ jobs:
       - name: Login to MCP Registry (GitHub OIDC)
         run: mcp-publisher login github-oidc
 
+      # The registry refuses a version it cannot fetch from npm, and a fresh
+      # publish takes up to a couple of minutes to be served.
+      - name: Wait for npm to serve the new version
+        if: startsWith(github.ref, 'refs/tags/mcp-v')
+        run: |
+          set -eu
+          PKG_VER=$(node -p "require('./package.json').version")
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              "https://registry.npmjs.org/@i-s3%2Frightos-mcp/$PKG_VER")
+            if [ "$code" = "200" ]; then
+              echo "npm is serving $PKG_VER after $((i * 10))s"
+              exit 0
+            fi
+            echo "npm returned $code for $PKG_VER — retrying ($i/60)"
+            sleep 10
+          done
+          echo "::error::npm did not serve $PKG_VER within 10 minutes"
+          exit 1
+
       - name: Publish to MCP Registry
         if: startsWith(github.ref, 'refs/tags/mcp-v')
         run: mcp-publisher publish

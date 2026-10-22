@@ -57,8 +57,23 @@ case "$MODE" in
     exit "$code"
     ;;
   publish)
-    npm publish --access public --provenance
-    echo "Published via OIDC Trusted Publishing"
+    set +e
+    out=$(npm publish --access public --provenance 2>&1)
+    code=$?
+    set -e
+    echo "$out"
+    if [[ "$code" -eq 0 ]]; then
+      echo "Published via OIDC Trusted Publishing"
+      exit 0
+    fi
+    # A later step can fail after npm already accepted the tarball (the MCP
+    # Registry rejects a version npm has not finished serving yet). Re-running
+    # the release must not stop here, so treat an existing version as done.
+    if echo "$out" | grep -q "cannot publish over the previously published versions"; then
+      echo "Version already on npm — nothing to publish (idempotent re-run)"
+      exit 0
+    fi
+    exit "$code"
     ;;
   *)
     echo "usage: oidc-npm-publish.sh dry-run|publish" >&2

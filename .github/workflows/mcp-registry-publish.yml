@@ -75,7 +75,11 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/mcp-v')
         run: mcp-publisher publish
 
-      - name: Verify registry listing (tag release or manual)
+      - name: Verify registry listing
+        env:
+          # workflow_dispatch only runs the OIDC dry-run, so package.json's version
+          # is not in the registry yet — check the listing is reachable instead.
+          REQUIRE_VERSION: ${{ startsWith(github.ref, 'refs/tags/mcp-v') && '1' || '0' }}
         run: |
           PKG_VER=$(node -p "require('./package.json').version")
           export PKG_VER
@@ -84,7 +88,13 @@ jobs:
           import json, sys, os
           expected = os.environ['PKG_VER']
           d = json.load(sys.stdin)
-          versions = [s['server']['version'] for s in d.get('servers', [])]
-          assert expected in versions, f'expected {expected} in registry, got {versions}'
-          print('registry OK:', d['servers'][0]['server']['name'], 'versions', versions)
+          servers = d.get('servers', [])
+          assert servers, 'registry returned no listing for io.github.suomimasuda/rightos-mcp'
+          versions = [s['server']['version'] for s in servers]
+          print('registry listing:', servers[0]['server']['name'], 'versions', versions)
+          if os.environ['REQUIRE_VERSION'] == '1':
+              assert expected in versions, f'expected {expected} in registry, got {versions}'
+              print('registry OK:', expected)
+          else:
+              print('dry-run: not requiring', expected)
           "

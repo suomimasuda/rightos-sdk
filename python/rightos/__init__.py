@@ -30,7 +30,7 @@ __all__ = [
     "DEFAULT_BASE_URL",
     "verify_webhook_signature",
 ]
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 DEFAULT_BASE_URL = "https://rightos.i-s3.com"
 

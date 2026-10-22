@@ -44,7 +44,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@i-s3/rightos": "file:../typescript",
+    "@i-s3/rightos": "^0.5.1",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "zod": "^3.25.0"
   },
